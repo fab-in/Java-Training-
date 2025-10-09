@@ -13,7 +13,7 @@ class Car extends FourWheeler {
         System.out.println("This 4 Wheeler Vehicle is a Car");
     }
 }
-public class Geeks {
+public class Main {
     public static void main(String[] args) {
         Car obj = new Car(); 
     }
