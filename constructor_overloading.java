@@ -28,10 +28,10 @@ class Main {
     public static void main(String[] args)
     {
 
-        Trial geek2 = new Trial("Sweta");
+        Trial t1 = new Trial("Sweta");
 
-        Trial geek3 = new Trial("Amiya", 28);
+        Trial t2 = new Trial("Amiya", 28);
 
-        Trial geek4 = new Trial(325614567);
+        Trial t3 = new Trial(325614567);
     }
 }
