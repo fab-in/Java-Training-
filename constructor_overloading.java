@@ -1,14 +1,14 @@
 import java.io.*;
 
-class Geeks {
+class Trial {
 
-    Geeks(String name)
+    Trial(String name)
     {
         System.out.println("Constructor with one "
                            + "argument - String: " + name);
     }
 
-    Geeks(String name, int age)
+    Trial(String name, int age)
     {
 
         System.out.println(
@@ -16,7 +16,7 @@ class Geeks {
             + " String and Integer: " + name + " " + age);
     }
 
-    Geeks(long id)
+    Trial(long id)
     {
         System.out.println(
             "Constructor with one argument: "
@@ -24,14 +24,14 @@ class Geeks {
     }
 }
 
-class GFG {
+class Main {
     public static void main(String[] args)
     {
 
-        Geeks geek2 = new Geeks("Sweta");
+        Trial geek2 = new Trial("Sweta");
 
-        Geeks geek3 = new Geeks("Amiya", 28);
+        Trial geek3 = new Trial("Amiya", 28);
 
-        Geeks geek4 = new Geeks(325614567);
+        Trial geek4 = new Trial(325614567);
     }
 }
