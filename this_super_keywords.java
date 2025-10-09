@@ -4,7 +4,7 @@ class Parent {
 }
 
 class RRR extends Parent {
-    void GFG() {
+    void trial() {
         this.a = 100;
         System.out.println("this.a = " + this.a);
         System.out.println("super.a = " + super.a);
@@ -15,6 +15,6 @@ class RRR extends Parent {
     }
 
     public static void main(String[] args) {
-        new RRR().GFG();
+        new RRR().trial();
     }
 }
