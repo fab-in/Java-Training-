@@ -11,7 +11,7 @@ class Student {
     }
 
     public void setAge(int age) {
-        if (age > 0) { 
+        if (age > 0) {
             this.age = age;
         } else {
             System.out.println("Age cannot be negative!");
@@ -23,7 +23,7 @@ class Student {
     }
 }
 
-public class Main {
+public class Encapsulation_Example {
     public static void main(String[] args) {
         Student s = new Student();
 
@@ -33,6 +33,6 @@ public class Main {
         System.out.println("Name: " + s.getName());
         System.out.println("Age: " + s.getAge());
 
-        s.setAge(-5);  
+        s.setAge(-5);
     }
 }

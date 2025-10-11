@@ -17,16 +17,16 @@ class SportsCar extends Car {
 
 }
 
-public class Main {
+public class FinalKeyword {
     public static void main(String[] args) {
-        final int speedLimit = 120; 
+        final int speedLimit = 120;
         System.out.println("Speed limit:" + speedLimit);
 
         Vehicle v = new Vehicle();
         v.showType();
 
         SportsCar sc = new SportsCar();
-        sc.startEngine(); 
+        sc.startEngine();
         sc.display();
     }
 }

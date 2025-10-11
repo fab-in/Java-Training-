@@ -1,8 +1,8 @@
-class Student {
+class Students {
     static String college = "RSET"; // static variable
     String name;
 
-    Student(String n) {
+    Students(String n) {
         name = n;
     }
 
@@ -11,16 +11,16 @@ class Student {
     }
 }
 
-public class Main {
+public class StaticKeyword {
     public static void main(String[] args) {
-        Student s1 = new Student("Fabin");
-        Student s2 = new Student("Elviin");
+        Students s1 = new Students("Fabin");
+        Students s2 = new Students("Elviin");
 
         s1.display();
         s2.display();
 
         // Changing static variable affects both
-        Student.college = "Rajagiri";
+        Students.college = "Rajagiri";
         s1.display();
         s2.display();
     }

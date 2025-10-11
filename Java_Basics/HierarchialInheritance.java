@@ -1,24 +1,24 @@
-class Vehicle {
-    Vehicle() {
+class Vehicles {
+    Vehicles() {
         System.out.println("This is a Vehicle");
     }
 }
 
-class Car extends Vehicle {
-    Car() {
+class Cars extends Vehicles {
+    Cars() {
         System.out.println("This Vehicle is Car");
     }
 }
 
-class Bus extends Vehicle {
+class Bus extends Vehicles {
     Bus() {
         System.out.println("This Vehicle is Bus");
     }
 }
 
-public class Test {
+public class HierarchialInheritance {
     public static void main(String[] args) {
-        Car obj1 = new Car(); 
-        Bus obj2 = new Bus(); 
+        Cars obj1 = new Cars();
+        Bus obj2 = new Bus();
     }
 }

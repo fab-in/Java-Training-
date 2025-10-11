@@ -4,8 +4,8 @@ class Sqaured {
     }
 }
 
-public class Main {
+public class StaticMethod {
     public static void main(String[] args) {
-        System.out.println(Sqaured.square(5)); 
+        System.out.println(Sqaured.square(5));
     }
 }
