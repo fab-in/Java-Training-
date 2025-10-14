@@ -7,20 +7,30 @@ public class HashSetPractise {
 
         HashSet<String> fruits = new HashSet<>();
 
-        fruits.add("Apple");
-        fruits.add("Banana");
-        fruits.add("Mango");
-        fruits.add("Orange");
-        fruits.add("Apple");
+        Scanner sc = new Scanner(System.in);
+
+        System.out.println("Enter Fruits:");
+
+        for (int i = 0; i < 4; i++) {
+            String value = sc.next();
+            fruits.add(value);
+        }
 
         System.out.println("Fruits in the HashSet: " + fruits);
 
-        if (fruits.contains("Mango")) {
-            System.out.println("Mango is in the set.");
+        System.out.println("Enter fruit to be checked: ");
+        String checkFruit = sc.next();
+
+        if (fruits.contains(checkFruit)) {
+            System.out.println(checkFruit + "is in the set.");
+        } else {
+            System.out.println(checkFruit + " is not in the set.");
         }
 
-        fruits.remove("Banana");
-        System.out.println("After removing Banana: " + fruits);
+        System.out.println("Enter fruit to be removed: ");
+        String removeFruit = sc.next();
+        fruits.remove(removeFruit);
+        System.out.println("After removing" + removeFruit + ": " + fruits);
 
         System.out.println("Iterating using Iterator:");
         Iterator<String> it = fruits.iterator();
