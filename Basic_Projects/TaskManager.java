@@ -25,19 +25,34 @@ abstract class Task {
         return this.completed;
     }
 
-    public void markCompleted() {
+    public void markCompleted() throws TaskAlreadyCompletedException {
+        if (this.completed) {
+            throw new TaskAlreadyCompletedException("Task is already completed!");
+        }
         this.completed = true;
     }
+
+    public abstract int getPriority();
 
     public abstract void displayDetails();
 }
 
-class WorkTask extends Task {
-    private String priority;
+class TaskAlreadyCompletedException extends Exception {
+    public TaskAlreadyCompletedException(String message) {
+        super(message);
+    }
+}
 
-    public WorkTask(String title, String description, String priority) {
+class WorkTask extends Task {
+    private int priority;
+
+    public WorkTask(String title, String description, int priority) {
         super(title, description);
         this.priority = priority;
+    }
+
+    public int getPriority() {
+        return priority;
     }
 
     public void displayDetails() {
@@ -51,11 +66,15 @@ class WorkTask extends Task {
 }
 
 class PersonalTask extends Task {
-    private String priority;
+    private int priority;
 
-    public PersonalTask(String title, String description, String priority) {
+    public PersonalTask(String title, String description, int priority) {
         super(title, description);
         this.priority = priority;
+    }
+
+    public int getPriority() {
+        return priority;
     }
 
     public void displayDetails() {
@@ -81,31 +100,41 @@ public class TaskManager {
             System.out.println("2. Add Personal Task");
             System.out.println("3. View All Tasks");
             System.out.println("4. Mark Task as Completed");
-            System.out.println("5. Exit");
+            System.out.println("5. Show Tasks Sorted by Priority");
+            System.out.println("6. Exit");
             System.out.print("Enter choice: ");
             choice = sc.nextInt();
             sc.nextLine();
 
             switch (choice) {
-                case 1:
+                case 1: {
                     addWorkTask();
                     break;
-                case 2:
+                }
+                case 2: {
                     addPersonalTask();
                     break;
-                case 3:
+                }
+                case 3: {
                     viewTasks();
                     break;
-                case 4:
+                }
+                case 4: {
                     markTaskCompleted();
                     break;
-                case 5:
-                    System.out.println("Goodbye");
+                }
+                case 5: {
+                    showTasksSortedByPriority();
                     break;
-                default:
+                }
+                case 6: {
+                    System.out.println("Goodbye");
+                }
+                default: {
                     System.out.println("Invalid choice");
+                }
             }
-        } while (choice != 5);
+        } while (choice != 6);
     }
 
     private static void addWorkTask() {
@@ -113,12 +142,13 @@ public class TaskManager {
         String title = sc.nextLine();
         System.out.print("Enter description: ");
         String desc = sc.nextLine();
-        System.out.print("Enter Priority Level: ");
-        String project = sc.nextLine();
+        System.out.print("Enter Priority Level (integer, higher = more important): ");
+        int priority = sc.nextInt();
+        sc.nextLine();
 
-        Task t = new WorkTask(title, desc, project);
+        Task t = new WorkTask(title, desc, priority);
         tasks.add(t);
-        System.out.println("✅ Work task added");
+        System.out.println("Work task added");
     }
 
     private static void addPersonalTask() {
@@ -126,12 +156,13 @@ public class TaskManager {
         String title = sc.nextLine();
         System.out.print("Enter description: ");
         String desc = sc.nextLine();
-        System.out.print("Enter Priority Level: ");
-        String priority = sc.nextLine();
+        System.out.print("Enter Priority Level (integer, higher = more important): ");
+        int priority = sc.nextInt();
+        sc.nextLine();
 
         Task t = new PersonalTask(title, desc, priority);
         tasks.add(t);
-        System.out.println("✅ Personal task added");
+        System.out.println("Personal task added");
     }
 
     private static void viewTasks() {
@@ -142,8 +173,7 @@ public class TaskManager {
         System.out.println("\n----TASK LIST----");
         for (int i = 0; i < tasks.size(); i++) {
             System.out.println("Task " + (i + 1));
-            Task currentTask = tasks.get(i);
-            currentTask.displayDetails();
+            tasks.get(i).displayDetails();
         }
     }
 
@@ -157,10 +187,30 @@ public class TaskManager {
         int num = sc.nextInt();
         if (num > 0 && num <= tasks.size()) {
             Task currentTask = tasks.get(num - 1);
-            currentTask.markCompleted();
-            System.out.println("✅ Task marked as completed");
+            try {
+                currentTask.markCompleted();
+                System.out.println("Task marked as completed");
+            } catch (TaskAlreadyCompletedException e) {
+                System.out.println("Error: " + e.getMessage());
+            }
         } else {
             System.out.println("Invalid task number");
+        }
+    }
+
+    private static void showTasksSortedByPriority() {
+        if (tasks.isEmpty()) {
+            System.out.println("No tasks available to display");
+            return;
+        }
+
+        ArrayList<Task> sortedTasks = new ArrayList<>(tasks);
+        sortedTasks.sort((t1, t2) -> t2.getPriority() - t1.getPriority());
+
+        System.out.println("\n-------Sorted Tasks------");
+        for (int i = 0; i < sortedTasks.size(); i++) {
+            System.out.println("Task " + (i + 1));
+            sortedTasks.get(i).displayDetails();
         }
     }
 }
