@@ -16,7 +16,7 @@ public class Expense {
     private int id;
     
     @Column(name = "title")
-    private String Title;
+    private String title;
     
     @Column(name = "amount")
     private double amount;
