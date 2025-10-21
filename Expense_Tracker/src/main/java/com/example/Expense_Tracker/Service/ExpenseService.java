@@ -1,7 +1,6 @@
 package com.example.Expense_Tracker.Service;
 
 import java.util.List;
-import java.util.Optional;
 import com.example.Expense_Tracker.Model.Expense;
 import com.example.Expense_Tracker.Exception.ExpenseNotFoundException;
 import com.example.Expense_Tracker.Exception.DuplicateExpenseException;
@@ -40,11 +39,13 @@ public class ExpenseService {
     }
 
     public List<Expense> getExpenseById(int id) {
-        Optional<Expense> expense = expenseRepo.findById(id);
-        if (expense.isEmpty()) {
+        List<Expense> result = expenseRepo.findAll().stream()
+            .filter(expense -> expense.getId() == id)
+            .toList();
+        if (result.isEmpty()) {
             throw new ExpenseNotFoundException(id);
         }
-        return List.of(expense.get());
+        return result;
     }
 
     public List<Expense> getExpenseByTitle(String title) {

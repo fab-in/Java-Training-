@@ -15,16 +15,15 @@ public class Expense {
     @Id
     private int id;
     
-    @Column(name = "title")
+    
     private String title;
     
-    @Column(name = "amount")
+    
     private double amount;
     
-    @Column(name = "date")
     private String date;
     
-    @Column(name = "category")
+    
     private String category;
 
 }
