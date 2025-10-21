@@ -1,23 +1,21 @@
 package com.example.Expense_Tracker.Service;
 
 import java.util.List;
-import java.util.ArrayList;
-import java.util.*;
+import java.util.Optional;
 import com.example.Expense_Tracker.Model.Expense;
 import com.example.Expense_Tracker.Exception.ExpenseNotFoundException;
 import com.example.Expense_Tracker.Exception.DuplicateExpenseException;
 import com.example.Expense_Tracker.Exception.ValidationException;
+import com.example.Expense_Tracker.Repository.ExpenseRepo;
 
-import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-@Component
+@Service
 public class ExpenseService {
 
-    List<Expense> expenses = new ArrayList<>(Arrays.asList(
-            new Expense(1, "Uber", 350, "10.10.2025", "Work"),
-            new Expense(2, "StarBucks", 500, "10.10.2025", "Personal"),
-            new Expense(3, "Food", 250, "11.10.2025", "Personal"),
-            new Expense(4, "Cousera", 1700, "12.10.2025", "Work")));
+    @Autowired
+    private ExpenseRepo expenseRepo;
 
     private void validateExpense(Expense expense) {
         if (expense.getId() <= 0) {
@@ -38,19 +36,19 @@ public class ExpenseService {
     }
 
     public List<Expense> getExpenses() {
-        return expenses;
+        return expenseRepo.findAll();
     }
 
     public List<Expense> getExpenseById(int id) {
-        List<Expense> result = expenses.stream().filter(e -> e.getId() == id).toList();
-        if (result.isEmpty()) {
+        Optional<Expense> expense = expenseRepo.findById(id);
+        if (expense.isEmpty()) {
             throw new ExpenseNotFoundException(id);
         }
-        return result;
+        return List.of(expense.get());
     }
 
     public List<Expense> getExpenseByTitle(String title) {
-        List<Expense> result = expenses.stream().filter(e -> e.getTitle().equalsIgnoreCase(title)).toList();
+        List<Expense> result = expenseRepo.findByTitleIgnoreCase(title);
         if (result.isEmpty()) {
             throw new ExpenseNotFoundException("Expense with title '" + title + "' not found");
         }
@@ -58,7 +56,7 @@ public class ExpenseService {
     }
 
     public List<Expense> getExpenseByDate(String date) {
-        List<Expense> result = expenses.stream().filter(e -> e.getDate().equalsIgnoreCase(date)).toList();
+        List<Expense> result = expenseRepo.findByDate(date);
         if (result.isEmpty()) {
             throw new ExpenseNotFoundException("Expense with date '" + date + "' not found");
         }
@@ -66,7 +64,7 @@ public class ExpenseService {
     }
 
     public List<Expense> getExpenseByCategory(String category) {
-        List<Expense> result = expenses.stream().filter(e -> e.getCategory().equalsIgnoreCase(category)).toList();
+        List<Expense> result = expenseRepo.findByCategoryIgnoreCase(category);
         if (result.isEmpty()) {
             throw new ExpenseNotFoundException("Expense with category '" + category + "' not found");
         }
@@ -75,43 +73,35 @@ public class ExpenseService {
 
     public void addExpense(Expense expense) {
         validateExpense(expense);
-
-        boolean idExists = expenses.stream().anyMatch(e -> e.getId() == expense.getId());
-
-        if (idExists) {
+        
+        // Check if expense with this ID already exists
+        if (expenseRepo.existsById(expense.getId())) {
             throw new DuplicateExpenseException("Expense with ID " + expense.getId() + " already exists");
         }
-
-        expenses.add(expense);
+        
+        expenseRepo.save(expense);
     }
 
     public void updateExpense(int id, Expense expense) {
         validateExpense(expense);
-
-        boolean found = false;
-        for (int i = 0; i < expenses.size(); i++) {
-            Expense e = expenses.get(i);
-            if (e.getId() == id) {
-                expenses.set(i, expense);
-                found = true;
-                break;
-            }
-        }
-
-        if (!found) {
+        
+        Optional<Expense> existingExpense = expenseRepo.findById(id);
+        if (existingExpense.isEmpty()) {
             throw new ExpenseNotFoundException(id);
         }
+        
+        expenseRepo.save(expense);
     }
 
     public void deleteExpense(int id) {
-        boolean removed = expenses.removeIf(e -> e.getId() == id);
-        if (!removed) {
+        if (!expenseRepo.existsById(id)) {
             throw new ExpenseNotFoundException(id);
         }
+        expenseRepo.deleteById(id);
     }
 
     public double getTotalExpense() {
-        return expenses.stream().mapToDouble(Expense::getAmount).sum();
+        return expenseRepo.findAll().stream().mapToDouble(Expense::getAmount).sum();
     }
 
 }
