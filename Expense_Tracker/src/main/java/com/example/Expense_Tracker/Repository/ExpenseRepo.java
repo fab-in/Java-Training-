@@ -8,8 +8,10 @@ import com.example.Expense_Tracker.Model.Expense;
 
 @Repository
 public interface ExpenseRepo extends JpaRepository<Expense, Integer> {
-    
+
     List<Expense> findByTitleIgnoreCase(String title);
+
     List<Expense> findByDate(String date);
+
     List<Expense> findByCategoryIgnoreCase(String category);
 }

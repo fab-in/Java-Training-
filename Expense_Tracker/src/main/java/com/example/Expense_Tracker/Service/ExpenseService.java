@@ -40,8 +40,8 @@ public class ExpenseService {
 
     public List<Expense> getExpenseById(int id) {
         List<Expense> result = expenseRepo.findAll().stream()
-            .filter(expense -> expense.getId() == id)
-            .toList();
+                .filter(expense -> expense.getId() == id)
+                .toList();
         if (result.isEmpty()) {
             throw new ExpenseNotFoundException(id);
         }
@@ -74,23 +74,24 @@ public class ExpenseService {
 
     public void addExpense(Expense expense) {
         validateExpense(expense);
-        
-        // Check if expense with this ID already exists
+
         if (expenseRepo.existsById(expense.getId())) {
             throw new DuplicateExpenseException("Expense with ID " + expense.getId() + " already exists");
         }
-        
+
         expenseRepo.save(expense);
     }
 
     public void updateExpense(int id, Expense expense) {
         validateExpense(expense);
-        
-        Optional<Expense> existingExpense = expenseRepo.findById(id);
+
+        List<Expense> existingExpense = expenseRepo.findAll().stream()
+                .filter(e -> e.getId() == id)
+                .toList();
         if (existingExpense.isEmpty()) {
             throw new ExpenseNotFoundException(id);
         }
-        
+
         expenseRepo.save(expense);
     }
 
