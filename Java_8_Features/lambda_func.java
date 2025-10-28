@@ -42,7 +42,6 @@ public class lambda_func {
     }
 }
 
-@FunctionalInterface
 interface Greeting {
     void sayHello(String name);
 }
