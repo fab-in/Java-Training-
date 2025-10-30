@@ -1,6 +1,5 @@
 package com.example.E_Wallet.Model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -43,5 +42,3 @@ public class Wallet {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 }
-
-
