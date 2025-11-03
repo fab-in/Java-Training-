@@ -24,7 +24,7 @@ public class UserService {
     }
 
     public UserDTO createUser(UserCreateDTO userCreateDTO) {
-        // Check if email already exists
+        
         if (userRepo.existsByEmail(userCreateDTO.getEmail())) {
             throw new DuplicateResourceException("User with email '" + userCreateDTO.getEmail() + "' already exists");
         }
@@ -38,6 +38,44 @@ public class UserService {
         User user = userRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         return convertToDTO(user);
+    }
+
+    public UserDTO updateUser(Long id, UserCreateDTO userCreateDTO) {
+        User user = userRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        
+       
+        if (userCreateDTO.getEmail() != null && !userCreateDTO.getEmail().equals(user.getEmail())) {
+            if (userRepo.existsByEmail(userCreateDTO.getEmail())) {
+                throw new DuplicateResourceException("User with email '" + userCreateDTO.getEmail() + "' already exists");
+            }
+        }
+        
+        
+        if (userCreateDTO.getName() != null) {
+            user.setName(userCreateDTO.getName());
+        }
+        if (userCreateDTO.getEmail() != null) {
+            user.setEmail(userCreateDTO.getEmail());
+        }
+        if (userCreateDTO.getPassword() != null) {
+            user.setPassword(userCreateDTO.getPassword());
+        }
+        if (userCreateDTO.getPhoneNumber() != null) {
+            user.setPhoneNumber(userCreateDTO.getPhoneNumber());
+        }
+        if (userCreateDTO.getRole() != null) {
+            user.setRole(userCreateDTO.getRole());
+        }
+        
+        User updatedUser = userRepo.save(user);
+        return convertToDTO(updatedUser);
+    }
+
+    public void deleteUser(Long id) {
+        User user = userRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        userRepo.delete(user);
     }
 
     
