@@ -8,6 +8,7 @@ import com.example.E_Wallet.DTO.UserDTO;
 import com.example.E_Wallet.DTO.UserCreateDTO;
 import com.example.E_Wallet.Exceptions.DuplicateResourceException;
 import com.example.E_Wallet.Exceptions.ResourceNotFoundException;
+import com.example.E_Wallet.Exceptions.ValidationException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,6 +25,15 @@ public class UserService {
     }
 
     public UserDTO createUser(UserCreateDTO userCreateDTO) {
+        // Email is required for user creation
+        if (userCreateDTO.getEmail() == null || userCreateDTO.getEmail().trim().isEmpty()) {
+            throw new ValidationException("Email is required and cannot be empty");
+        }
+        
+        // Password is required for user creation
+        if (userCreateDTO.getPassword() == null || userCreateDTO.getPassword().trim().isEmpty()) {
+            throw new ValidationException("Password is required and cannot be empty");
+        }
         
         if (userRepo.existsByEmail(userCreateDTO.getEmail())) {
             throw new DuplicateResourceException("User with email '" + userCreateDTO.getEmail() + "' already exists");
@@ -93,6 +103,7 @@ public class UserService {
     private User convertToEntity(UserCreateDTO userCreateDTO) {
         User user = new User();
         user.setName(userCreateDTO.getName());
+        
         user.setEmail(userCreateDTO.getEmail());
         user.setPassword(userCreateDTO.getPassword());
         user.setPhoneNumber(userCreateDTO.getPhoneNumber());
