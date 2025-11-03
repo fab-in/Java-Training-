@@ -29,21 +29,37 @@ public class UserService {
         if (userCreateDTO.getEmail() == null || userCreateDTO.getEmail().trim().isEmpty()) {
             throw new ValidationException("Email is required and cannot be empty");
         }
-        
+
         // Password is required for user creation
         if (userCreateDTO.getPassword() == null || userCreateDTO.getPassword().trim().isEmpty()) {
             throw new ValidationException("Password is required and cannot be empty");
         }
-        
+
         if (userRepo.existsByEmail(userCreateDTO.getEmail())) {
             throw new DuplicateResourceException("User with email '" + userCreateDTO.getEmail() + "' already exists");
         }
-        
+
         User user = convertToEntity(userCreateDTO);
+        // Find the first available ID (smallest gap or max+1)
+        List<Long> existingIds = userRepo.findAll().stream()
+                .map(User::getId)
+                .sorted()
+                .collect(Collectors.toList());
+        
+        long nextId = 1;
+        for (Long existingId : existingIds) {
+            if (existingId == nextId) {
+                nextId++;
+            } else {
+                break;
+            }
+        }
+        user.setId(nextId);
+        
         User savedUser = userRepo.save(user);
         return convertToDTO(savedUser);
     }
-    
+
     public UserDTO getUserById(Long id) {
         User user = userRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
@@ -53,15 +69,14 @@ public class UserService {
     public UserDTO updateUser(Long id, UserCreateDTO userCreateDTO) {
         User user = userRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
-        
-       
+
         if (userCreateDTO.getEmail() != null && !userCreateDTO.getEmail().equals(user.getEmail())) {
             if (userRepo.existsByEmail(userCreateDTO.getEmail())) {
-                throw new DuplicateResourceException("User with email '" + userCreateDTO.getEmail() + "' already exists");
+                throw new DuplicateResourceException(
+                        "User with email '" + userCreateDTO.getEmail() + "' already exists");
             }
         }
-        
-        
+
         if (userCreateDTO.getName() != null) {
             user.setName(userCreateDTO.getName());
         }
@@ -77,7 +92,7 @@ public class UserService {
         if (userCreateDTO.getRole() != null) {
             user.setRole(userCreateDTO.getRole());
         }
-        
+
         User updatedUser = userRepo.save(user);
         return convertToDTO(updatedUser);
     }
@@ -88,7 +103,6 @@ public class UserService {
         userRepo.delete(user);
     }
 
-    
     private UserDTO convertToDTO(User user) {
         UserDTO userDTO = new UserDTO();
         userDTO.setId(user.getId());
@@ -97,13 +111,13 @@ public class UserService {
         userDTO.setPhoneNumber(user.getPhoneNumber());
         userDTO.setRole(user.getRole());
         return userDTO;
+
     }
 
-    
     private User convertToEntity(UserCreateDTO userCreateDTO) {
         User user = new User();
         user.setName(userCreateDTO.getName());
-        
+
         user.setEmail(userCreateDTO.getEmail());
         user.setPassword(userCreateDTO.getPassword());
         user.setPhoneNumber(userCreateDTO.getPhoneNumber());
