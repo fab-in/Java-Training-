@@ -6,6 +6,8 @@ import com.example.E_Wallet.Repository.UserRepo;
 import com.example.E_Wallet.Model.User;
 import com.example.E_Wallet.DTO.UserDTO;
 import com.example.E_Wallet.DTO.UserCreateDTO;
+import com.example.E_Wallet.Exceptions.DuplicateResourceException;
+import com.example.E_Wallet.Exceptions.ResourceNotFoundException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,9 +24,20 @@ public class UserService {
     }
 
     public UserDTO createUser(UserCreateDTO userCreateDTO) {
+        // Check if email already exists
+        if (userRepo.existsByEmail(userCreateDTO.getEmail())) {
+            throw new DuplicateResourceException("User with email '" + userCreateDTO.getEmail() + "' already exists");
+        }
+        
         User user = convertToEntity(userCreateDTO);
         User savedUser = userRepo.save(user);
         return convertToDTO(savedUser);
+    }
+    
+    public UserDTO getUserById(Long id) {
+        User user = userRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        return convertToDTO(user);
     }
 
     
