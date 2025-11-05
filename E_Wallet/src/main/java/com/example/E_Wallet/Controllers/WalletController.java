@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.E_Wallet.Service.WalletService;
 import com.example.E_Wallet.DTO.WalletDTO;
 import com.example.E_Wallet.DTO.WalletCreateDTO;
+import com.example.E_Wallet.DTO.WalletUpdateDTO;
 import jakarta.validation.Valid;
 import java.util.List;
 
@@ -40,8 +41,8 @@ public class WalletController {
     }
 
     @PutMapping("/wallets/{id}")
-    public ResponseEntity<WalletDTO> updateWallet(@PathVariable Long id, @Valid @RequestBody WalletCreateDTO walletCreateDTO) {
-        WalletDTO walletDTO = walletService.updateWallet(id, walletCreateDTO);
+    public ResponseEntity<WalletDTO> updateWallet(@PathVariable Long id, @Valid @RequestBody WalletUpdateDTO walletUpdateDTO) {
+        WalletDTO walletDTO = walletService.updateWallet(id, walletUpdateDTO);
         return ResponseEntity.ok(walletDTO);
     }
 
