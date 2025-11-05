@@ -24,8 +24,9 @@ public class WalletController {
     private WalletService walletService;
 
     @GetMapping("/wallets")
-    public List<WalletDTO> getWallets() {
-        return walletService.getWallets();
+    public ResponseEntity<List<WalletDTO>> getWallets() {
+        List<WalletDTO> wallets = walletService.getWallets();
+        return ResponseEntity.ok(wallets);
     }
 
     @GetMapping("/wallets/{id}")
@@ -40,9 +41,9 @@ public class WalletController {
         return ResponseEntity.status(HttpStatus.CREATED).body(walletDTO);
     }
 
-    @PutMapping("/wallets/{id}")
-    public ResponseEntity<WalletDTO> updateWallet(@PathVariable Long id, @Valid @RequestBody WalletUpdateDTO walletUpdateDTO) {
-        WalletDTO walletDTO = walletService.updateWallet(id, walletUpdateDTO);
+    @PutMapping("/wallets")
+    public ResponseEntity<WalletDTO> updateWallet(@Valid @RequestBody WalletUpdateDTO walletUpdateDTO) {
+        WalletDTO walletDTO = walletService.updateWallet(walletUpdateDTO);
         return ResponseEntity.ok(walletDTO);
     }
 
@@ -52,3 +53,4 @@ public class WalletController {
         return ResponseEntity.noContent().build();
     }
 }
+

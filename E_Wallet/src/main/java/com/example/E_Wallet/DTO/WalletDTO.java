@@ -9,7 +9,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class WalletDTO {
-    private long id;
     private long userId;
     private String walletName;
     private LocalDateTime createdAt;

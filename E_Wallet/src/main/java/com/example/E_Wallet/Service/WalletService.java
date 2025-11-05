@@ -2,18 +2,19 @@ package com.example.E_Wallet.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.example.E_Wallet.Repository.WalletRepo;
+import com.example.E_Wallet.Repository.UserRepo;
 import com.example.E_Wallet.Model.Wallet;
 import com.example.E_Wallet.Model.User;
 import com.example.E_Wallet.DTO.WalletDTO;
 import com.example.E_Wallet.DTO.WalletCreateDTO;
 import com.example.E_Wallet.DTO.WalletUpdateDTO;
-import com.example.E_Wallet.Repository.WalletRepo;
-import com.example.E_Wallet.Repository.UserRepo;
-import com.example.E_Wallet.Exceptions.ResourceNotFoundException;
 import com.example.E_Wallet.Exceptions.DuplicateResourceException;
+import com.example.E_Wallet.Exceptions.ResourceNotFoundException;
+import com.example.E_Wallet.Exceptions.ValidationException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.time.LocalDateTime;
 
 @Service
 public class WalletService {
@@ -41,65 +42,70 @@ public class WalletService {
         User user = userRepo.findById(walletCreateDTO.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + walletCreateDTO.getUserId()));
 
-        // Check if account number already exists
+        // Validate account number is unique
         if (walletRepo.existsByAccountNumber(walletCreateDTO.getAccountNumber())) {
-            throw new DuplicateResourceException("Wallet with account number '" + walletCreateDTO.getAccountNumber() + "' already exists");
+            throw new DuplicateResourceException("Account number '" + walletCreateDTO.getAccountNumber() + "' already exists");
         }
 
-        // Create wallet entity
-        Wallet wallet = new Wallet();
-        wallet.setUser(user);
-        wallet.setWalletName(walletCreateDTO.getWalletName());
-        wallet.setAccountNumber(walletCreateDTO.getAccountNumber());
-        wallet.setBalance(walletCreateDTO.getBalance() != null ? walletCreateDTO.getBalance() : 0.0);
-        wallet.setPasscode(walletCreateDTO.getPasscode());
-        wallet.setCreatedAt(LocalDateTime.now());
+        // Validate balance
+        if (walletCreateDTO.getBalance() < 0) {
+            throw new ValidationException("Balance must be 0 or greater");
+        }
 
+        // Validate passcode is 4 digits
+        if (walletCreateDTO.getPasscode() == null || !walletCreateDTO.getPasscode().matches("^\\d{4}$")) {
+            throw new ValidationException("Passcode must be exactly 4 digits");
+        }
+
+        Wallet wallet = convertToEntity(walletCreateDTO, user);
+        wallet.setCreatedAt(LocalDateTime.now());
+        
         Wallet savedWallet = walletRepo.save(wallet);
         return convertToDTO(savedWallet);
     }
 
-    public WalletDTO updateWallet(Long id, WalletUpdateDTO walletUpdateDTO) {
-        Wallet wallet = walletRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Wallet not found with id: " + id));
+    public WalletDTO updateWallet(WalletUpdateDTO walletUpdateDTO) {
+        // Validate wallet exists
+        Wallet wallet = walletRepo.findById(walletUpdateDTO.getWalletId())
+                .orElseThrow(() -> new ResourceNotFoundException("Wallet not found with id: " + walletUpdateDTO.getWalletId()));
+
+        // Validate user exists
+        User user = userRepo.findById(walletUpdateDTO.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + walletUpdateDTO.getUserId()));
+
+        // Validate wallet belongs to user
+        if (wallet.getUser().getId() != walletUpdateDTO.getUserId()) {
+            throw new ValidationException("Wallet does not belong to the specified user");
+        }
 
         // Update wallet name if provided
         if (walletUpdateDTO.getWalletName() != null && !walletUpdateDTO.getWalletName().trim().isEmpty()) {
             wallet.setWalletName(walletUpdateDTO.getWalletName());
         }
 
-        // Update account number only if provided, different from current, and not already taken
+        // Update account number if provided and validate uniqueness
         if (walletUpdateDTO.getAccountNumber() != null && !walletUpdateDTO.getAccountNumber().trim().isEmpty()) {
-            String newAccountNumber = walletUpdateDTO.getAccountNumber().trim();
-            String currentAccountNumber = wallet.getAccountNumber() != null ? wallet.getAccountNumber().trim() : "";
-            
-            // Only check for duplicates if the account number is actually changing
-            // Compare both values after trimming to ensure exact match
-            if (!newAccountNumber.equals(currentAccountNumber)) {
-                // Check if new account number already exists in other wallets
-                if (walletRepo.existsByAccountNumberExcludingId(newAccountNumber, id)) {
-                    throw new DuplicateResourceException("Wallet with account number '" + newAccountNumber + "' already exists");
-                }
-                wallet.setAccountNumber(newAccountNumber);
+            if (!walletUpdateDTO.getAccountNumber().equals(wallet.getAccountNumber()) &&
+                walletRepo.existsByAccountNumber(walletUpdateDTO.getAccountNumber())) {
+                throw new DuplicateResourceException("Account number '" + walletUpdateDTO.getAccountNumber() + "' already exists");
             }
-            // If account number is the same, do nothing - no need to update
+            wallet.setAccountNumber(walletUpdateDTO.getAccountNumber());
         }
 
         // Update balance if provided
         if (walletUpdateDTO.getBalance() != null) {
+            if (walletUpdateDTO.getBalance() < 0) {
+                throw new ValidationException("Balance must be 0 or greater");
+            }
             wallet.setBalance(walletUpdateDTO.getBalance());
         }
 
         // Update passcode if provided
         if (walletUpdateDTO.getPasscode() != null && !walletUpdateDTO.getPasscode().trim().isEmpty()) {
+            if (!walletUpdateDTO.getPasscode().matches("^\\d{4}$")) {
+                throw new ValidationException("Passcode must be exactly 4 digits");
+            }
             wallet.setPasscode(walletUpdateDTO.getPasscode());
-        }
-
-        // Update user if provided and different from current
-        if (walletUpdateDTO.getUserId() != null && !walletUpdateDTO.getUserId().equals(wallet.getUser().getId())) {
-            User user = userRepo.findById(walletUpdateDTO.getUserId())
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + walletUpdateDTO.getUserId()));
-            wallet.setUser(user);
         }
 
         Wallet updatedWallet = walletRepo.save(wallet);
@@ -114,10 +120,20 @@ public class WalletService {
 
     private WalletDTO convertToDTO(Wallet wallet) {
         WalletDTO walletDTO = new WalletDTO();
-        walletDTO.setId(wallet.getId());
         walletDTO.setUserId(wallet.getUser().getId());
         walletDTO.setWalletName(wallet.getWalletName());
         walletDTO.setCreatedAt(wallet.getCreatedAt());
         return walletDTO;
     }
+
+    private Wallet convertToEntity(WalletCreateDTO walletCreateDTO, User user) {
+        Wallet wallet = new Wallet();
+        wallet.setUser(user);
+        wallet.setWalletName(walletCreateDTO.getWalletName());
+        wallet.setAccountNumber(walletCreateDTO.getAccountNumber());
+        wallet.setBalance(walletCreateDTO.getBalance());
+        wallet.setPasscode(walletCreateDTO.getPasscode());
+        return wallet;
+    }
 }
+
