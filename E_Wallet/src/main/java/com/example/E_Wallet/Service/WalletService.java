@@ -14,6 +14,7 @@ import com.example.E_Wallet.Exceptions.ResourceNotFoundException;
 import com.example.E_Wallet.Exceptions.ValidationException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -74,7 +75,7 @@ public class WalletService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + walletUpdateDTO.getUserId()));
 
         // Validate wallet belongs to user
-        if (wallet.getUser().getId() != walletUpdateDTO.getUserId()) {
+        if (!wallet.getUser().getId().equals(walletUpdateDTO.getUserId())) {
             throw new ValidationException("Wallet does not belong to the specified user");
         }
 

@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
@@ -14,7 +15,7 @@ import lombok.NoArgsConstructor;
 public class WalletCreateDTO {
     
     @NotNull(message = "User ID is required")
-    private Long userId;
+    private UUID userId;
     
     @NotBlank(message = "Wallet name is required")
     private String walletName;

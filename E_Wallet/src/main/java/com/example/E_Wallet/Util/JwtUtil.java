@@ -9,6 +9,7 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtUtil {
@@ -19,6 +20,7 @@ public class JwtUtil {
     private static final long EXPIRATION_TIME = 15 * 60 * 1000; // 15 minutes
 
     
+    @PostConstruct
     public void initializeSecretKey() {
         try {
             // Create a KeyGenerator for HMAC-SHA algorithms
@@ -64,7 +66,7 @@ public class JwtUtil {
      * @param email User email
      * @return JWT token string
      */
-    public String generateToken(Long userId, String email) {
+    public String generateToken(UUID userId, String email) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + EXPIRATION_TIME);
 

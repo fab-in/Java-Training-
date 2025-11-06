@@ -5,6 +5,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.E_Wallet.Service.UserService;
 import com.example.E_Wallet.DTO.UserDTO;
 import com.example.E_Wallet.DTO.UserCreateDTO;
+import com.example.E_Wallet.DTO.LoginRequestDTO;
+import com.example.E_Wallet.DTO.AuthResponseDTO;
 
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 public class UserController {
@@ -30,7 +33,7 @@ public class UserController {
     }
 
     @GetMapping("/users/{id}")
-    public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
+    public ResponseEntity<UserDTO> getUserById(@PathVariable UUID id) {
         UserDTO userDTO = userService.getUserById(id);
         return ResponseEntity.ok(userDTO);
     }
@@ -42,14 +45,26 @@ public class UserController {
     }
 
     @PutMapping("/users/{id}")
-    public ResponseEntity<UserDTO> updateUser(@PathVariable Long id, @Valid @RequestBody UserCreateDTO userCreateDTO) {
+    public ResponseEntity<UserDTO> updateUser(@PathVariable UUID id, @Valid @RequestBody UserCreateDTO userCreateDTO) {
         UserDTO userDTO = userService.updateUser(id, userCreateDTO);
         return ResponseEntity.ok(userDTO);
     }
 
     @DeleteMapping("/users/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/auth/signup")
+    public ResponseEntity<AuthResponseDTO> signup(@Valid @RequestBody UserCreateDTO userCreateDTO) {
+        AuthResponseDTO response = userService.signup(userCreateDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/auth/login")
+    public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
+        AuthResponseDTO response = userService.login(loginRequest);
+        return ResponseEntity.ok(response);
     }
 }
