@@ -8,10 +8,5 @@ import com.example.E_Wallet.Model.User;
 public interface UserRepo extends JpaRepository<User, UUID> {
 
     boolean existsByEmail(String email);
-    
-    /**
-     * Find a user by their email address
-     * Used for login authentication
-     */
     Optional<User> findByEmail(String email);
 }
