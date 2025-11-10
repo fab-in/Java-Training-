@@ -54,8 +54,8 @@ public class WalletController {
     @DeleteMapping("/wallets")
     public ResponseEntity<Map<String, String>> deleteWallet(
             @RequestParam String walletName,
-            @RequestParam String userName) {
-        walletService.deleteWallet(walletName, userName);
+            @RequestParam String userIdentifier) {
+        walletService.deleteWallet(walletName, userIdentifier);
         Map<String, String> response = new HashMap<>();
         response.put("message", "Wallet deleted successfully");
         return ResponseEntity.ok(response);

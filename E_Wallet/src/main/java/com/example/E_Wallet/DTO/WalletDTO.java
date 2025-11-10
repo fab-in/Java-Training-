@@ -10,7 +10,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class WalletDTO {
-    private UUID walletId;
+    private UUID id;
     private UUID userId;
     private String walletName;
     private LocalDateTime createdAt;

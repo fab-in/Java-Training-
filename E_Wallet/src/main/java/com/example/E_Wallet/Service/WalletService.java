@@ -45,7 +45,7 @@ public class WalletService {
         if (securityUtil.isAdmin()) {
             wallets = walletRepo.findAll();
         } else {
-            wallets = walletRepo.findByUser_Id(currentUser.getId());
+            wallets = walletRepo.findByUserId(currentUser.getId());
         }
 
         return wallets.stream()
@@ -103,14 +103,14 @@ public class WalletService {
             throw new ValidationException("Wallet name is required");
         }
 
-        if (walletUpdateDTO.getUserName() == null || walletUpdateDTO.getUserName().trim().isEmpty()) {
+        if (walletUpdateDTO.getUserIdentifier() == null || walletUpdateDTO.getUserIdentifier().trim().isEmpty()) {
             throw new ValidationException("User identifier (name or email) is required");
         }
 
-        Wallet wallet = findWalletByNameAndUser(walletUpdateDTO.getWalletName(), walletUpdateDTO.getUserName())
+        Wallet wallet = findWalletByNameAndUser(walletUpdateDTO.getWalletName(), walletUpdateDTO.getUserIdentifier())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Wallet not found with name '" + walletUpdateDTO.getWalletName() + "' for user '"
-                                + walletUpdateDTO.getUserName() + "'"));
+                                + walletUpdateDTO.getUserIdentifier() + "'"));
 
         User currentUser = securityUtil.getCurrentUser();
 
@@ -128,13 +128,13 @@ public class WalletService {
         }
 
         User user = wallet.getUser(); // Default to current wallet owner
-        if (walletUpdateDTO.getNewUserName() != null && !walletUpdateDTO.getNewUserName().trim().isEmpty()) {
+        if (walletUpdateDTO.getNewUserIdentifier() != null && !walletUpdateDTO.getNewUserIdentifier().trim().isEmpty()) {
             if (!isAdmin) {
                 throw new ValidationException("You cannot change wallet ownership");
             }
-            user = findUserByIdentifier(walletUpdateDTO.getNewUserName())
+            user = findUserByIdentifier(walletUpdateDTO.getNewUserIdentifier())
                     .orElseThrow(() -> new ResourceNotFoundException(
-                            "User not found with identifier: " + walletUpdateDTO.getNewUserName()));
+                            "User not found with identifier: " + walletUpdateDTO.getNewUserIdentifier()));
             wallet.setUser(user);
         }
 
@@ -169,18 +169,18 @@ public class WalletService {
         return convertToDTO(updatedWallet);
     }
 
-    public void deleteWallet(String walletName, String userName) {
+    public void deleteWallet(String walletName, String userIdentifier) {
         if (walletName == null || walletName.trim().isEmpty()) {
             throw new ValidationException("Wallet name cannot be null or empty");
         }
 
-        if (userName == null || userName.trim().isEmpty()) {
+        if (userIdentifier == null || userIdentifier.trim().isEmpty()) {
             throw new ValidationException("User identifier (name or email) cannot be null or empty");
         }
 
-        Wallet wallet = findWalletByNameAndUser(walletName, userName)
+        Wallet wallet = findWalletByNameAndUser(walletName, userIdentifier)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Wallet not found with name '" + walletName + "' for user '" + userName + "'"));
+                        "Wallet not found with name '" + walletName + "' for user '" + userIdentifier + "'"));
 
         User currentUser = securityUtil.getCurrentUser();
 
@@ -218,15 +218,15 @@ public class WalletService {
         }
 
         if (userIdentifier.contains("@")) {
-            return walletRepo.findByWalletNameAndUser_Email(walletName, userIdentifier);
+            return walletRepo.findByWalletNameAndUserEmail(walletName, userIdentifier);
         } else {
-            return walletRepo.findByWalletNameAndUser_Name(walletName, userIdentifier);
+            return walletRepo.findByWalletNameAndUserName(walletName, userIdentifier);
         }
     }
 
     private WalletDTO convertToDTO(Wallet wallet) {
         WalletDTO walletDTO = new WalletDTO();
-        walletDTO.setWalletId(wallet.getId());
+        walletDTO.setId(wallet.getId());
         walletDTO.setUserId(wallet.getUser().getId());
         walletDTO.setWalletName(wallet.getWalletName());
         walletDTO.setCreatedAt(wallet.getCreatedAt());

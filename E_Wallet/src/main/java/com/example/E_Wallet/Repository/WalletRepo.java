@@ -8,8 +8,8 @@ import java.util.UUID;
 
 public interface WalletRepo extends JpaRepository<Wallet, UUID> {
     boolean existsByAccountNumber(String accountNumber);
-    List<Wallet> findByUser_Id(UUID userId);
-    Optional<Wallet> findByWalletNameAndUser_Email(String walletName, String userEmail);
-    Optional<Wallet> findByWalletNameAndUser_Name(String walletName, String userName);
+    List<Wallet> findByUserId(UUID userId);
+    Optional<Wallet> findByWalletNameAndUserEmail(String walletName, String userEmail);
+    Optional<Wallet> findByWalletNameAndUserName(String walletName, String userName);
 }
 

@@ -16,7 +16,7 @@ public class WalletUpdateDTO {
     private String walletName;
     
     @NotNull(message = "User identifier (name or email) is required")
-    private String userName;
+    private String userIdentifier;
     
     private String newWalletName;
     
@@ -28,6 +28,6 @@ public class WalletUpdateDTO {
     @Pattern(regexp = "^\\d{4}$", message = "Passcode must be exactly 4 digits")
     private String passcode;
     
-    private String newUserName;
+    private String newUserIdentifier;
 }
 
