@@ -6,20 +6,19 @@ import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.util.UUID;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class WalletUpdateDTO {
     
-    @NotNull(message = "Wallet ID is required")
-    private Long walletId;
-    
-    @NotNull(message = "User ID is required")
-    private UUID userId;
-    
+    @NotNull(message = "Wallet name is required")
     private String walletName;
+    
+    @NotNull(message = "User identifier (name or email) is required")
+    private String userName;
+    
+    private String newWalletName;
     
     private String accountNumber;
     
@@ -28,5 +27,7 @@ public class WalletUpdateDTO {
     
     @Pattern(regexp = "^\\d{4}$", message = "Passcode must be exactly 4 digits")
     private String passcode;
+    
+    private String newUserName;
 }
 

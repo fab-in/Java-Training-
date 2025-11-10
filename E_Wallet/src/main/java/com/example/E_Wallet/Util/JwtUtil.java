@@ -21,7 +21,7 @@ public class JwtUtil {
 
     private SecretKey secretKey;
 
-    private static final long EXPIRATION_TIME = 15 * 60 * 1000; // 15 minutes
+    private static final long EXPIRATION_TIME = 30 * 60 * 1000; // 30 minutes
 
     @PostConstruct
     public void initializeSecretKey() {
@@ -68,62 +68,36 @@ public class JwtUtil {
                 .compact();
     }
 
-    /**
-     * Validates a JWT token by checking its signature and expiration.
-     * 
-     * @param token The JWT token string to validate
-     * @return true if the token is valid, false otherwise
-     * 
-     * WHY: This method ensures that:
-     * 1. The token hasn't been tampered with (signature verification)
-     * 2. The token hasn't expired
-     * 3. The token format is correct
-     */
+
     public boolean validateToken(String token) {
         try {
-            // Parse and verify the token using the secret key
-            // If the token is invalid, expired, or tampered with, an exception will be thrown
+            
             Jwts.parser()
                     .verifyWith(secretKey)
                     .build()
                     .parseSignedClaims(token);
             return true;
         } catch (ExpiredJwtException e) {
-            // Token has expired
             System.err.println("JWT token has expired: " + e.getMessage());
             return false;
         } catch (MalformedJwtException e) {
-            // Token format is invalid
             System.err.println("Invalid JWT token format: " + e.getMessage());
             return false;
         } catch (UnsupportedJwtException e) {
-            // Token is not supported
             System.err.println("Unsupported JWT token: " + e.getMessage());
             return false;
         } catch (SignatureException e) {
-            // Token signature doesn't match (token was tampered with)
             System.err.println("Invalid JWT signature: " + e.getMessage());
             return false;
         } catch (IllegalArgumentException e) {
-            // Token is null or empty
             System.err.println("JWT token is null or empty: " + e.getMessage());
             return false;
         } catch (Exception e) {
-            // Catch any other unexpected exceptions
             System.err.println("Error validating JWT token: " + e.getMessage());
             return false;
         }
     }
 
-    /**
-     * Extracts the email (subject) from a JWT token.
-     * 
-     * @param token The JWT token string
-     * @return The email address from the token's subject claim
-     * 
-     * WHY: The email is stored as the "subject" of the JWT token.
-     * We need this to identify which user the token belongs to.
-     */
     public String getEmailFromToken(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(secretKey)
@@ -133,15 +107,6 @@ public class JwtUtil {
         return claims.getSubject();
     }
 
-    /**
-     * Extracts the user ID from a JWT token.
-     * 
-     * @param token The JWT token string
-     * @return The UUID of the user from the token's userId claim
-     * 
-     * WHY: The userId is stored as a custom claim in the JWT.
-     * We need this to load the full user details from the database.
-     */
     public UUID getUserIdFromToken(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(secretKey)
@@ -152,15 +117,6 @@ public class JwtUtil {
         return UUID.fromString(userIdString);
     }
 
-    /**
-     * Checks if a JWT token has expired.
-     * 
-     * @param token The JWT token string
-     * @return true if the token is expired, false otherwise
-     * 
-     * WHY: Even if validateToken() checks expiration, sometimes we need
-     * to check this separately for more specific error handling.
-     */
     public boolean isTokenExpired(String token) {
         try {
             Claims claims = Jwts.parser()
@@ -170,7 +126,7 @@ public class JwtUtil {
                     .getPayload();
             return claims.getExpiration().before(new Date());
         } catch (Exception e) {
-            return true; // If we can't parse, consider it expired
+            return true; 
         }
     }
 }

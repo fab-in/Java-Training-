@@ -9,13 +9,17 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.example.E_Wallet.Service.WalletService;
 import com.example.E_Wallet.DTO.WalletDTO;
 import com.example.E_Wallet.DTO.WalletCreateDTO;
 import com.example.E_Wallet.DTO.WalletUpdateDTO;
 import jakarta.validation.Valid;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @RestController
 public class WalletController {
@@ -30,7 +34,7 @@ public class WalletController {
     }
 
     @GetMapping("/wallets/{id}")
-    public ResponseEntity<WalletDTO> getWalletById(@PathVariable Long id) {
+    public ResponseEntity<WalletDTO> getWalletById(@PathVariable UUID id) {
         WalletDTO walletDTO = walletService.getWalletById(id);
         return ResponseEntity.ok(walletDTO);
     }
@@ -47,10 +51,14 @@ public class WalletController {
         return ResponseEntity.ok(walletDTO);
     }
 
-    @DeleteMapping("/wallets/{id}")
-    public ResponseEntity<Void> deleteWallet(@PathVariable Long id) {
-        walletService.deleteWallet(id);
-        return ResponseEntity.noContent().build();
+    @DeleteMapping("/wallets")
+    public ResponseEntity<Map<String, String>> deleteWallet(
+            @RequestParam String walletName,
+            @RequestParam String userName) {
+        walletService.deleteWallet(walletName, userName);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Wallet deleted successfully");
+        return ResponseEntity.ok(response);
     }
 }
 

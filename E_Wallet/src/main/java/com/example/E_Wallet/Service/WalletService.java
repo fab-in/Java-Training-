@@ -2,6 +2,7 @@ package com.example.E_Wallet.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.example.E_Wallet.Repository.WalletRepo;
 import com.example.E_Wallet.Repository.UserRepo;
 import com.example.E_Wallet.Model.Wallet;
@@ -15,26 +16,12 @@ import com.example.E_Wallet.Exceptions.ValidationException;
 import com.example.E_Wallet.Security.SecurityUtil;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Wallet Service with Role-Based Access Control (RBAC)
- * 
- * WHAT IT DOES:
- * This service handles all wallet operations (CRUD) with role-based access control.
- * 
- * ACCESS RULES:
- * - ADMIN users: Can access ALL wallets (view, update, delete any wallet)
- * - Regular USER: Can only access THEIR OWN wallets (filtered by userId)
- * 
- * WHY THIS APPROACH:
- * 1. Security: Prevents users from accessing other users' data
- * 2. Data Privacy: Each user only sees their own financial information
- * 3. Admin Oversight: Admins can manage all wallets for support/maintenance
- * 4. Principle of Least Privilege: Users get minimum access needed
- */
 @Service
+@Transactional
 public class WalletService {
 
     @Autowired
@@ -46,85 +33,42 @@ public class WalletService {
     @Autowired
     private SecurityUtil securityUtil;
 
-    /**
-     * Gets all wallets with role-based filtering.
-     * 
-     * ACCESS LOGIC:
-     * - If current user is ADMIN: Returns ALL wallets in the system
-     * - If current user is regular USER: Returns ONLY wallets belonging to that user
-     * 
-     * WHY:
-     * - Admins need to see all wallets for management/support
-     * - Regular users should only see their own wallets for privacy
-     * 
-     * HOW IT WORKS:
-     * 1. Gets the currently authenticated user from SecurityUtil
-     * 2. Checks if user has ADMIN role
-     * 3. If admin: queries all wallets (walletRepo.findAll())
-     * 4. If regular user: queries only their wallets (walletRepo.findByUser_Id())
-     * 5. Converts to DTOs and returns
-     */
     public List<WalletDTO> getWallets() {
         User currentUser = securityUtil.getCurrentUser();
-        
+
         if (currentUser == null) {
             throw new ValidationException("User not authenticated");
         }
-        
+
         List<Wallet> wallets;
-        
-        // ROLE-BASED FILTERING:
-        // Admin can see all wallets, regular users only see their own
+
         if (securityUtil.isAdmin()) {
-            // ADMIN: Get all wallets
             wallets = walletRepo.findAll();
         } else {
-            // REGULAR USER: Get only their wallets
             wallets = walletRepo.findByUser_Id(currentUser.getId());
         }
-        
+
         return wallets.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Gets a specific wallet by ID with ownership verification.
-     * 
-     * ACCESS LOGIC:
-     * - If current user is ADMIN: Can access ANY wallet
-     * - If current user is regular USER: Can only access wallets they own
-     * 
-     * WHY:
-     * - Prevents users from accessing other users' wallets by guessing IDs
-     * - Admins need access to any wallet for support purposes
-     * 
-     * HOW IT WORKS:
-     * 1. Finds the wallet by ID
-     * 2. Gets the currently authenticated user
-     * 3. If user is NOT admin AND wallet doesn't belong to user: throws exception
-     * 4. Otherwise: returns the wallet DTO
-     */
-    public WalletDTO getWalletById(Long id) {
+    public WalletDTO getWalletById(UUID id) {
         Wallet wallet = walletRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Wallet not found with id: " + id));
-        
+
         User currentUser = securityUtil.getCurrentUser();
-        
+
         if (currentUser == null) {
             throw new ValidationException("User not authenticated");
         }
-        
-        // OWNERSHIP CHECK:
-        // Regular users can only access their own wallets
-        // Admins can access any wallet
+
         if (!securityUtil.isAdmin()) {
-            // Check if wallet belongs to current user
             if (!wallet.getUser().getId().equals(currentUser.getId())) {
                 throw new ValidationException("Access denied: You can only access your own wallets");
             }
         }
-        
+
         return convertToDTO(wallet);
     }
 
@@ -154,64 +98,48 @@ public class WalletService {
         return convertToDTO(savedWallet);
     }
 
-    /**
-     * Updates a wallet with role-based access control.
-     * 
-     * ACCESS LOGIC:
-     * - If current user is ADMIN: Can update ANY wallet
-     * - If current user is regular USER: Can only update their own wallets
-     * 
-     * WHY:
-     * - Prevents users from modifying other users' wallets
-     * - Admins may need to update wallets for support/maintenance
-     * 
-     * HOW IT WORKS:
-     * 1. Finds the wallet to update
-     * 2. Gets the currently authenticated user
-     * 3. If user is NOT admin: verifies wallet belongs to them
-     * 4. If admin: can update any wallet (but still validates userId exists)
-     * 5. Updates wallet fields and saves
-     */
     public WalletDTO updateWallet(WalletUpdateDTO walletUpdateDTO) {
+        if (walletUpdateDTO.getWalletName() == null || walletUpdateDTO.getWalletName().trim().isEmpty()) {
+            throw new ValidationException("Wallet name is required");
+        }
 
-        Wallet wallet = walletRepo.findById(walletUpdateDTO.getWalletId())
+        if (walletUpdateDTO.getUserName() == null || walletUpdateDTO.getUserName().trim().isEmpty()) {
+            throw new ValidationException("User identifier (name or email) is required");
+        }
+
+        Wallet wallet = findWalletByNameAndUser(walletUpdateDTO.getWalletName(), walletUpdateDTO.getUserName())
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Wallet not found with id: " + walletUpdateDTO.getWalletId()));
+                        "Wallet not found with name '" + walletUpdateDTO.getWalletName() + "' for user '"
+                                + walletUpdateDTO.getUserName() + "'"));
 
         User currentUser = securityUtil.getCurrentUser();
-        
+
         if (currentUser == null) {
             throw new ValidationException("User not authenticated");
         }
 
-        // OWNERSHIP CHECK:
-        // Regular users can only update their own wallets
-        // Admins can update any wallet
-        if (!securityUtil.isAdmin()) {
-            // Regular user: verify wallet belongs to them
+        boolean isAdmin = securityUtil.isAdmin();
+
+        if (!isAdmin) {
+
             if (!wallet.getUser().getId().equals(currentUser.getId())) {
                 throw new ValidationException("Access denied: You can only update your own wallets");
             }
-            
-            // Also verify the userId in DTO matches current user (prevent changing ownership)
-            if (!walletUpdateDTO.getUserId().equals(currentUser.getId())) {
+        }
+
+        User user = wallet.getUser(); // Default to current wallet owner
+        if (walletUpdateDTO.getNewUserName() != null && !walletUpdateDTO.getNewUserName().trim().isEmpty()) {
+            if (!isAdmin) {
                 throw new ValidationException("You cannot change wallet ownership");
             }
+            user = findUserByIdentifier(walletUpdateDTO.getNewUserName())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "User not found with identifier: " + walletUpdateDTO.getNewUserName()));
+            wallet.setUser(user);
         }
 
-        // Load the user from DTO (for admin updates or validation)
-        User user = userRepo.findById(walletUpdateDTO.getUserId())
-                .orElseThrow(
-                        () -> new ResourceNotFoundException("User not found with id: " + walletUpdateDTO.getUserId()));
-
-        // Additional validation: wallet must belong to the user specified in DTO
-        // (This prevents admins from accidentally assigning wallets to wrong users)
-        if (!wallet.getUser().getId().equals(walletUpdateDTO.getUserId())) {
-            throw new ValidationException("Wallet does not belong to the specified user");
-        }
-
-        if (walletUpdateDTO.getWalletName() != null && !walletUpdateDTO.getWalletName().trim().isEmpty()) {
-            wallet.setWalletName(walletUpdateDTO.getWalletName());
+        if (walletUpdateDTO.getNewWalletName() != null && !walletUpdateDTO.getNewWalletName().trim().isEmpty()) {
+            wallet.setWalletName(walletUpdateDTO.getNewWalletName());
         }
 
         if (walletUpdateDTO.getAccountNumber() != null && !walletUpdateDTO.getAccountNumber().trim().isEmpty()) {
@@ -241,48 +169,64 @@ public class WalletService {
         return convertToDTO(updatedWallet);
     }
 
-    /**
-     * Deletes a wallet with role-based access control.
-     * 
-     * ACCESS LOGIC:
-     * - If current user is ADMIN: Can delete ANY wallet
-     * - If current user is regular USER: Can only delete their own wallets
-     * 
-     * WHY:
-     * - Prevents users from deleting other users' wallets
-     * - Admins may need to delete wallets for account management
-     * 
-     * HOW IT WORKS:
-     * 1. Finds the wallet to delete
-     * 2. Gets the currently authenticated user
-     * 3. If user is NOT admin: verifies wallet belongs to them
-     * 4. If authorized: deletes the wallet
-     */
-    public void deleteWallet(Long id) {
-        Wallet wallet = walletRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Wallet not found with id: " + id));
-        
+    public void deleteWallet(String walletName, String userName) {
+        if (walletName == null || walletName.trim().isEmpty()) {
+            throw new ValidationException("Wallet name cannot be null or empty");
+        }
+
+        if (userName == null || userName.trim().isEmpty()) {
+            throw new ValidationException("User identifier (name or email) cannot be null or empty");
+        }
+
+        Wallet wallet = findWalletByNameAndUser(walletName, userName)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Wallet not found with name '" + walletName + "' for user '" + userName + "'"));
+
         User currentUser = securityUtil.getCurrentUser();
-        
+
         if (currentUser == null) {
             throw new ValidationException("User not authenticated");
         }
-        
-        // OWNERSHIP CHECK:
-        // Regular users can only delete their own wallets
-        // Admins can delete any wallet
+
         if (!securityUtil.isAdmin()) {
-            // Check if wallet belongs to current user
-            if (!wallet.getUser().getId().equals(currentUser.getId())) {
+            // Access user relationship to check ownership
+            UUID walletOwnerId = wallet.getUser().getId();
+            if (!walletOwnerId.equals(currentUser.getId())) {
                 throw new ValidationException("Access denied: You can only delete your own wallets");
             }
         }
-        
+
         walletRepo.delete(wallet);
+    }
+
+    private Optional<User> findUserByIdentifier(String identifier) {
+        if (identifier == null || identifier.trim().isEmpty()) {
+            return Optional.empty();
+        }
+
+        if (identifier.contains("@")) {
+            return userRepo.findByEmail(identifier);
+        } else {
+            return userRepo.findByName(identifier);
+        }
+    }
+
+    private Optional<Wallet> findWalletByNameAndUser(String walletName, String userIdentifier) {
+        if (walletName == null || walletName.trim().isEmpty() ||
+                userIdentifier == null || userIdentifier.trim().isEmpty()) {
+            return Optional.empty();
+        }
+
+        if (userIdentifier.contains("@")) {
+            return walletRepo.findByWalletNameAndUser_Email(walletName, userIdentifier);
+        } else {
+            return walletRepo.findByWalletNameAndUser_Name(walletName, userIdentifier);
+        }
     }
 
     private WalletDTO convertToDTO(Wallet wallet) {
         WalletDTO walletDTO = new WalletDTO();
+        walletDTO.setWalletId(wallet.getId());
         walletDTO.setUserId(wallet.getUser().getId());
         walletDTO.setWalletName(wallet.getWalletName());
         walletDTO.setCreatedAt(wallet.getCreatedAt());
