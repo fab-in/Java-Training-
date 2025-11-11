@@ -23,10 +23,10 @@ public class UserService {
 
     @Autowired
     private UserRepo userRepo;
-    
+
     @Autowired
     private JwtUtil jwtUtil;
-    
+
     // BCrypt password encoder
     private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -37,7 +37,7 @@ public class UserService {
     }
 
     public UserDTO createUser(UserCreateDTO userCreateDTO) {
-        
+
         if (userCreateDTO.getEmail() == null || userCreateDTO.getEmail().trim().isEmpty()) {
             throw new ValidationException("Email is required and cannot be empty");
         }
@@ -51,8 +51,7 @@ public class UserService {
         }
 
         User user = convertToEntity(userCreateDTO);
-        
-        
+
         User savedUser = userRepo.save(user);
         return convertToDTO(savedUser);
     }
@@ -97,8 +96,9 @@ public class UserService {
 
     public void deleteUser(UUID id) {
         User user = userRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         userRepo.delete(user);
+
     }
 
     private UserDTO convertToDTO(User user) {
@@ -112,9 +112,8 @@ public class UserService {
 
     }
 
-    
     public AuthResponseDTO login(LoginRequestDTO loginRequest) {
-        
+
         if (loginRequest.getEmail() == null || loginRequest.getEmail().trim().isEmpty()) {
             throw new ValidationException("Email is required");
         }
@@ -122,27 +121,22 @@ public class UserService {
             throw new ValidationException("Password is required");
         }
 
-        
         Optional<User> userOptional = userRepo.findByEmail(loginRequest.getEmail());
-        
+
         if (userOptional.isEmpty()) {
             throw new ValidationException("Invalid email or password");
         }
 
         User user = userOptional.get();
 
-        
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
             throw new ValidationException("Invalid email or password");
         }
 
-        
         String token = jwtUtil.generateToken(user.getId(), user.getEmail());
 
-        
         UserDTO userDTO = convertToDTO(user);
 
-        
         AuthResponseDTO response = new AuthResponseDTO();
         response.setToken(token);
         response.setMessage("Login successful");
@@ -151,19 +145,15 @@ public class UserService {
         return response;
     }
 
-    
     public AuthResponseDTO signup(UserCreateDTO userCreateDTO) {
-        
+
         UserDTO userDTO = createUser(userCreateDTO);
-        
-        
+
         User user = userRepo.findById(userDTO.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found after creation"));
 
-        
         String token = jwtUtil.generateToken(user.getId(), user.getEmail());
 
-        
         AuthResponseDTO response = new AuthResponseDTO();
         response.setToken(token);
         response.setMessage("Signup successful");
