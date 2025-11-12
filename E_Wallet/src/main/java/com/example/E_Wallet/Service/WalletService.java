@@ -10,6 +10,9 @@ import com.example.E_Wallet.Model.User;
 import com.example.E_Wallet.DTO.WalletDTO;
 import com.example.E_Wallet.DTO.WalletCreateDTO;
 import com.example.E_Wallet.DTO.WalletUpdateDTO;
+import com.example.E_Wallet.DTO.CreditRequestDTO;
+import com.example.E_Wallet.DTO.WithdrawalRequestDTO;
+import com.example.E_Wallet.DTO.TransferRequestDTO;
 import com.example.E_Wallet.Exceptions.DuplicateResourceException;
 import com.example.E_Wallet.Exceptions.ResourceNotFoundException;
 import com.example.E_Wallet.Exceptions.ValidationException;
@@ -197,6 +200,108 @@ public class WalletService {
         }
 
         walletRepo.delete(wallet);
+    }
+
+    public String creditWallet(CreditRequestDTO creditRequestDTO) {
+        if (creditRequestDTO.getAmount() == null || creditRequestDTO.getAmount() <= 0) {
+            throw new ValidationException("Amount must be greater than 0");
+        }
+
+        Wallet wallet = walletRepo.findById(creditRequestDTO.getWalletId())
+                .orElseThrow(() -> new ResourceNotFoundException("Wallet not found with id: " + creditRequestDTO.getWalletId()));
+
+        User currentUser = securityUtil.getCurrentUser();
+        if (currentUser == null) {
+            throw new ValidationException("User not authenticated");
+        }
+
+        if (!securityUtil.isAdmin()) {
+            if (!wallet.getUser().getId().equals(currentUser.getId())) {
+                throw new ValidationException("Access denied: You can only credit your own wallets");
+            }
+        }
+
+        if (!wallet.getPasscode().equals(creditRequestDTO.getPasscode())) {
+            throw new ValidationException("Invalid passcode");
+        }
+
+        wallet.setBalance(wallet.getBalance() + creditRequestDTO.getAmount());
+        walletRepo.save(wallet);
+        return "Transaction successful, account has been credited successfully";
+    }
+
+    public String withdrawWallet(WithdrawalRequestDTO withdrawalRequestDTO) {
+        if (withdrawalRequestDTO.getAmount() == null || withdrawalRequestDTO.getAmount() <= 0) {
+            throw new ValidationException("Amount must be greater than 0");
+        }
+
+        Wallet wallet = walletRepo.findById(withdrawalRequestDTO.getWalletId())
+                .orElseThrow(() -> new ResourceNotFoundException("Wallet not found with id: " + withdrawalRequestDTO.getWalletId()));
+
+        User currentUser = securityUtil.getCurrentUser();
+        if (currentUser == null) {
+            throw new ValidationException("User not authenticated");
+        }
+
+        if (!securityUtil.isAdmin()) {
+            if (!wallet.getUser().getId().equals(currentUser.getId())) {
+                throw new ValidationException("Access denied: You can only withdraw from your own wallets");
+            }
+        }
+
+        if (!wallet.getPasscode().equals(withdrawalRequestDTO.getPasscode())) {
+            throw new ValidationException("Invalid passcode");
+        }
+
+        if (wallet.getBalance() < withdrawalRequestDTO.getAmount()) {
+            throw new ValidationException("Insufficient balance. Available balance: " + wallet.getBalance());
+        }
+
+        wallet.setBalance(wallet.getBalance() - withdrawalRequestDTO.getAmount());
+        walletRepo.save(wallet);
+        return "Amount has been withdrawn successfully";
+    }
+
+    public String transferFunds(TransferRequestDTO transferRequestDTO) {
+        if (transferRequestDTO.getAmount() == null || transferRequestDTO.getAmount() <= 0) {
+            throw new ValidationException("Amount must be greater than 0");
+        }
+
+        if (transferRequestDTO.getSourceWalletId().equals(transferRequestDTO.getDestinationWalletId())) {
+            throw new ValidationException("Source and destination wallets cannot be the same");
+        }
+
+        Wallet sourceWallet = walletRepo.findById(transferRequestDTO.getSourceWalletId())
+                .orElseThrow(() -> new ResourceNotFoundException("Source wallet not found with id: " + transferRequestDTO.getSourceWalletId()));
+
+        Wallet destinationWallet = walletRepo.findById(transferRequestDTO.getDestinationWalletId())
+                .orElseThrow(() -> new ResourceNotFoundException("Destination wallet not found with id: " + transferRequestDTO.getDestinationWalletId()));
+
+        User currentUser = securityUtil.getCurrentUser();
+        if (currentUser == null) {
+            throw new ValidationException("User not authenticated");
+        }
+
+        if (!securityUtil.isAdmin()) {
+            if (!sourceWallet.getUser().getId().equals(currentUser.getId())) {
+                throw new ValidationException("Access denied: You can only transfer from your own wallets");
+            }
+        }
+
+        if (!sourceWallet.getPasscode().equals(transferRequestDTO.getPasscode())) {
+            throw new ValidationException("Invalid passcode");
+        }
+
+        if (sourceWallet.getBalance() < transferRequestDTO.getAmount()) {
+            throw new ValidationException("Insufficient balance. Available balance: " + sourceWallet.getBalance());
+        }
+
+        sourceWallet.setBalance(sourceWallet.getBalance() - transferRequestDTO.getAmount());
+        destinationWallet.setBalance(destinationWallet.getBalance() + transferRequestDTO.getAmount());
+
+        walletRepo.save(sourceWallet);
+        walletRepo.save(destinationWallet);
+        return "Transaction successful, funds have been transferred successfully";
     }
 
     private Optional<User> findUserByIdentifier(String identifier) {

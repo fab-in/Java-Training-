@@ -15,6 +15,10 @@ import com.example.E_Wallet.Service.WalletService;
 import com.example.E_Wallet.DTO.WalletDTO;
 import com.example.E_Wallet.DTO.WalletCreateDTO;
 import com.example.E_Wallet.DTO.WalletUpdateDTO;
+import com.example.E_Wallet.DTO.CreditRequestDTO;
+import com.example.E_Wallet.DTO.WithdrawalRequestDTO;
+import com.example.E_Wallet.DTO.TransferRequestDTO;
+import com.example.E_Wallet.DTO.MessageResponseDTO;
 import jakarta.validation.Valid;
 import java.util.HashMap;
 import java.util.List;
@@ -59,6 +63,24 @@ public class WalletController {
         Map<String, String> response = new HashMap<>();
         response.put("message", "Wallet deleted successfully");
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/wallets/credit")
+    public ResponseEntity<MessageResponseDTO> creditWallet(@Valid @RequestBody CreditRequestDTO creditRequestDTO) {
+        String message = walletService.creditWallet(creditRequestDTO);
+        return ResponseEntity.ok(new MessageResponseDTO(message));
+    }
+
+    @PostMapping("/wallets/withdraw")
+    public ResponseEntity<MessageResponseDTO> withdrawWallet(@Valid @RequestBody WithdrawalRequestDTO withdrawalRequestDTO) {
+        String message = walletService.withdrawWallet(withdrawalRequestDTO);
+        return ResponseEntity.ok(new MessageResponseDTO(message));
+    }
+
+    @PostMapping("/wallets/transfer")
+    public ResponseEntity<MessageResponseDTO> transferFunds(@Valid @RequestBody TransferRequestDTO transferRequestDTO) {
+        String message = walletService.transferFunds(transferRequestDTO);
+        return ResponseEntity.ok(new MessageResponseDTO(message));
     }
 }
 
