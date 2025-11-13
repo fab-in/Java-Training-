@@ -6,7 +6,6 @@ import com.example.E_Wallet.Service.UserService;
 import com.example.E_Wallet.DTO.UserDTO;
 import com.example.E_Wallet.DTO.UserCreateDTO;
 import com.example.E_Wallet.DTO.LoginRequestDTO;
-import com.example.E_Wallet.DTO.AuthResponseDTO;
 
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +17,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -39,32 +40,42 @@ public class UserController {
     }
 
     @PostMapping("/users")
-    public ResponseEntity<UserDTO> createUser(@Valid @RequestBody UserCreateDTO userCreateDTO) {
-        UserDTO userDTO = userService.createUser(userCreateDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(userDTO);
+    public ResponseEntity<Map<String, String>> createUser(@Valid @RequestBody UserCreateDTO userCreateDTO) {
+        userService.createUser(userCreateDTO);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "User added successfully");
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/users/{id}")
-    public ResponseEntity<UserDTO> updateUser(@PathVariable UUID id, @Valid @RequestBody UserCreateDTO userCreateDTO) {
-        UserDTO userDTO = userService.updateUser(id, userCreateDTO);
-        return ResponseEntity.ok(userDTO);
+    public ResponseEntity<Map<String, String>> updateUser(@PathVariable UUID id, @Valid @RequestBody UserCreateDTO userCreateDTO) {
+        userService.updateUser(id, userCreateDTO);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "User updated successfully");
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/users/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
+    public ResponseEntity<Map<String, String>> deleteUser(@PathVariable UUID id) {
         userService.deleteUser(id);
-        return ResponseEntity.noContent().build();
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "User deleted successfully");
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/auth/signup")
-    public ResponseEntity<AuthResponseDTO> signup(@Valid @RequestBody UserCreateDTO userCreateDTO) {
-        AuthResponseDTO response = userService.signup(userCreateDTO);
+    public ResponseEntity<Map<String, String>> signup(@Valid @RequestBody UserCreateDTO userCreateDTO) {
+        userService.signup(userCreateDTO);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "User signed up successfully");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/auth/login")
-    public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
-        AuthResponseDTO response = userService.login(loginRequest);
+    public ResponseEntity<Map<String, String>> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
+        userService.login(loginRequest);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "User logged in successfully");
         return ResponseEntity.ok(response);
     }
 }

@@ -18,7 +18,6 @@ import com.example.E_Wallet.DTO.WalletUpdateDTO;
 import com.example.E_Wallet.DTO.CreditRequestDTO;
 import com.example.E_Wallet.DTO.WithdrawalRequestDTO;
 import com.example.E_Wallet.DTO.TransferRequestDTO;
-import com.example.E_Wallet.DTO.MessageResponseDTO;
 import jakarta.validation.Valid;
 import java.util.HashMap;
 import java.util.List;
@@ -44,15 +43,19 @@ public class WalletController {
     }
 
     @PostMapping("/wallets")
-    public ResponseEntity<WalletDTO> createWallet(@Valid @RequestBody WalletCreateDTO walletCreateDTO) {
-        WalletDTO walletDTO = walletService.createWallet(walletCreateDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body("wallet added sucesfully");
+    public ResponseEntity<Map<String, String>> createWallet(@Valid @RequestBody WalletCreateDTO walletCreateDTO) {
+        walletService.createWallet(walletCreateDTO);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Wallet added successfully");
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/wallets")
-    public ResponseEntity<WalletDTO> updateWallet(@Valid @RequestBody WalletUpdateDTO walletUpdateDTO) {
-        WalletDTO walletDTO = walletService.updateWallet(walletUpdateDTO);
-        return ResponseEntity.ok(walletDTO);
+    public ResponseEntity<Map<String, String>> updateWallet(@Valid @RequestBody WalletUpdateDTO walletUpdateDTO) {
+        walletService.updateWallet(walletUpdateDTO);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Wallet updated successfully");
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/wallets")
@@ -66,21 +69,27 @@ public class WalletController {
     }
 
     @PostMapping("/wallets/credit")
-    public ResponseEntity<MessageResponseDTO> creditWallet(@Valid @RequestBody CreditRequestDTO creditRequestDTO) {
-        String message = walletService.creditWallet(creditRequestDTO);
-        return ResponseEntity.ok(new MessageResponseDTO(message));
+    public ResponseEntity<Map<String, String>> creditWallet(@Valid @RequestBody CreditRequestDTO creditRequestDTO) {
+        walletService.creditWallet(creditRequestDTO);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Amount credited successfully");
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/wallets/withdraw")
-    public ResponseEntity<MessageResponseDTO> withdrawWallet(
+    public ResponseEntity<Map<String, String>> withdrawWallet(
             @Valid @RequestBody WithdrawalRequestDTO withdrawalRequestDTO) {
-        String message = walletService.withdrawWallet(withdrawalRequestDTO);
-        return ResponseEntity.ok(new MessageResponseDTO(message));
+        walletService.withdrawWallet(withdrawalRequestDTO);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Amount withdrawn successfully");
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/wallets/transfer")
-    public ResponseEntity<MessageResponseDTO> transferFunds(@Valid @RequestBody TransferRequestDTO transferRequestDTO) {
-        String message = walletService.transferFunds(transferRequestDTO);
-        return ResponseEntity.ok(new MessageResponseDTO(message));
+    public ResponseEntity<Map<String, String>> transferFunds(@Valid @RequestBody TransferRequestDTO transferRequestDTO) {
+        walletService.transferFunds(transferRequestDTO);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Funds transferred successfully");
+        return ResponseEntity.ok(response);
     }
 }
