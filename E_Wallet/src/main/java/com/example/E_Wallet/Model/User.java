@@ -11,12 +11,14 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @Entity
 @Data
+@ToString(exclude = {"wallets", "password"}) // Exclude lazy-loaded wallets and sensitive password from toString()
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "users")

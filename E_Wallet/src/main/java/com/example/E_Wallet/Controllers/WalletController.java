@@ -46,7 +46,7 @@ public class WalletController {
     @PostMapping("/wallets")
     public ResponseEntity<WalletDTO> createWallet(@Valid @RequestBody WalletCreateDTO walletCreateDTO) {
         WalletDTO walletDTO = walletService.createWallet(walletCreateDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(walletDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body("wallet added sucesfully");
     }
 
     @PutMapping("/wallets")
@@ -72,7 +72,8 @@ public class WalletController {
     }
 
     @PostMapping("/wallets/withdraw")
-    public ResponseEntity<MessageResponseDTO> withdrawWallet(@Valid @RequestBody WithdrawalRequestDTO withdrawalRequestDTO) {
+    public ResponseEntity<MessageResponseDTO> withdrawWallet(
+            @Valid @RequestBody WithdrawalRequestDTO withdrawalRequestDTO) {
         String message = walletService.withdrawWallet(withdrawalRequestDTO);
         return ResponseEntity.ok(new MessageResponseDTO(message));
     }
@@ -83,4 +84,3 @@ public class WalletController {
         return ResponseEntity.ok(new MessageResponseDTO(message));
     }
 }
-

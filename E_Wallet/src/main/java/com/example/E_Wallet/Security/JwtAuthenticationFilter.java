@@ -45,14 +45,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             
-            token = authHeader.substring(7); 
+            token = authHeader.substring(7).trim(); // Remove "Bearer " prefix and trim whitespace
 
             try {
                 
                 email = jwtUtil.getEmailFromToken(token);
+                logger.debug("Extracted email from token: " + email);
             } catch (Exception e) {
                 logger.warn("Could not extract email from token: " + e.getMessage());
+                // Continue to filter chain - let Spring Security handle unauthorized access
             }
+        } else if (authHeader != null) {
+            logger.warn("Authorization header present but doesn't start with 'Bearer ': " + authHeader);
         }
 
         
@@ -90,12 +94,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     
                     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
                     
-                    logger.info("User authenticated: " + email);
+                    logger.info("User authenticated successfully: " + email + " with role: " + user.getRole());
                 } else {
-                    logger.warn("User not found in database: " + email);
+                    logger.warn("User not found in database for email: " + email);
                 }
             } else {
-                logger.warn("Invalid JWT token for email: " + email);
+                logger.warn("JWT token validation failed for email: " + email);
+            }
+        } else {
+            if (token == null) {
+                logger.debug("No JWT token found in request to: " + request.getRequestURI());
+            } else if (email == null) {
+                logger.warn("Could not extract email from token for request: " + request.getRequestURI());
             }
         }
         filterChain.doFilter(request, response);
