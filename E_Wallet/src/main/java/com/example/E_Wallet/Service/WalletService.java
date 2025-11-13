@@ -217,10 +217,9 @@ public class WalletService {
             throw new ValidationException("User not authenticated");
         }
 
-        if (!securityUtil.isAdmin()) {
-            if (!wallet.getUser().getId().equals(currentUser.getId())) {
-                throw new ValidationException("Access denied: You can only credit your own wallets");
-            }
+        // Only wallet owners can credit their wallets, admins cannot credit wallets that don't belong to them
+        if (!wallet.getUser().getId().equals(currentUser.getId())) {
+            throw new ValidationException("Access denied: You can only credit your own wallets");
         }
 
         if (!wallet.getPasscode().equals(creditRequestDTO.getPasscode())) {
@@ -246,10 +245,9 @@ public class WalletService {
             throw new ValidationException("User not authenticated");
         }
 
-        if (!securityUtil.isAdmin()) {
-            if (!wallet.getUser().getId().equals(currentUser.getId())) {
-                throw new ValidationException("Access denied: You can only withdraw from your own wallets");
-            }
+        // Only wallet owners can withdraw from their wallets, admins cannot withdraw from wallets that don't belong to them
+        if (!wallet.getUser().getId().equals(currentUser.getId())) {
+            throw new ValidationException("Access denied: You can only withdraw from your own wallets");
         }
 
         if (!wallet.getPasscode().equals(withdrawalRequestDTO.getPasscode())) {
@@ -287,10 +285,9 @@ public class WalletService {
             throw new ValidationException("User not authenticated");
         }
 
-        if (!securityUtil.isAdmin()) {
-            if (!sourceWallet.getUser().getId().equals(currentUser.getId())) {
-                throw new ValidationException("Access denied: You can only transfer from your own wallets");
-            }
+        // Only wallet owners can transfer from their wallets, admins cannot transfer from wallets that don't belong to them
+        if (!sourceWallet.getUser().getId().equals(currentUser.getId())) {
+            throw new ValidationException("Access denied: You can only transfer from your own wallets");
         }
 
         if (!sourceWallet.getPasscode().equals(transferRequestDTO.getPasscode())) {
