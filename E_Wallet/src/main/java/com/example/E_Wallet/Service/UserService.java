@@ -139,6 +139,10 @@ public class UserService {
 
         AuthResponseDTO response = new AuthResponseDTO();
         response.setToken(token);
+        response.setTokenType("Bearer");
+        response.setExpiresAt(jwtUtil.getExpirationDateFromToken(token));
+        response.setIssuedAt(jwtUtil.getIssuedAtDateFromToken(token));
+        response.setExpiresIn(jwtUtil.getExpirationTime());
         response.setMessage("Login successful");
         response.setUser(userDTO);
 
@@ -156,6 +160,10 @@ public class UserService {
 
         AuthResponseDTO response = new AuthResponseDTO();
         response.setToken(token);
+        response.setTokenType("Bearer");
+        response.setExpiresAt(jwtUtil.getExpirationDateFromToken(token));
+        response.setIssuedAt(jwtUtil.getIssuedAtDateFromToken(token));
+        response.setExpiresIn(jwtUtil.getExpirationTime());
         response.setMessage("Signup successful");
         response.setUser(userDTO);
 

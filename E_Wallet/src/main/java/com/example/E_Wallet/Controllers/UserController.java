@@ -6,6 +6,7 @@ import com.example.E_Wallet.Service.UserService;
 import com.example.E_Wallet.DTO.UserDTO;
 import com.example.E_Wallet.DTO.UserCreateDTO;
 import com.example.E_Wallet.DTO.LoginRequestDTO;
+import com.example.E_Wallet.DTO.AuthResponseDTO;
 
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,18 +65,14 @@ public class UserController {
     }
 
     @PostMapping("/auth/signup")
-    public ResponseEntity<Map<String, String>> signup(@Valid @RequestBody UserCreateDTO userCreateDTO) {
-        userService.signup(userCreateDTO);
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "User signed up successfully");
+    public ResponseEntity<AuthResponseDTO> signup(@Valid @RequestBody UserCreateDTO userCreateDTO) {
+        AuthResponseDTO response = userService.signup(userCreateDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/auth/login")
-    public ResponseEntity<Map<String, String>> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
-        userService.login(loginRequest);
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "User logged in successfully");
+    public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
+        AuthResponseDTO response = userService.login(loginRequest);
         return ResponseEntity.ok(response);
     }
 }

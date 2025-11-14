@@ -3,6 +3,7 @@ package com.example.E_Wallet.DTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.util.Date;
 
 
 @Data
@@ -10,6 +11,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AuthResponseDTO {
     private String token;
+    private String tokenType;
+    private Date expiresAt;
+    private Date issuedAt;
+    private Long expiresIn; // in milliseconds
     private String message;
     private UserDTO user;
 }

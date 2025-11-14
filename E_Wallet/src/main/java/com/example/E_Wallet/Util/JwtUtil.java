@@ -129,4 +129,34 @@ public class JwtUtil {
             return true; 
         }
     }
+
+    public Date getExpirationDateFromToken(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            return claims.getExpiration();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public Date getIssuedAtDateFromToken(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            return claims.getIssuedAt();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public long getExpirationTime() {
+        return EXPIRATION_TIME;
+    }
 }
