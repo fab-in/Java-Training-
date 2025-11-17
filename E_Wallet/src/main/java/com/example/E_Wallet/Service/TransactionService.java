@@ -10,7 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,25 +26,65 @@ public class TransactionService {
     private SecurityUtil securityUtil;
 
     public List<TransactionDTO> getTransactions() {
+        return fetchTransactionsForCurrentUser().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<TransactionDTO> getCreditTransactions() {
+        return filterTransactionsByRemark("Credit transaction");
+    }
+
+    public List<TransactionDTO> getWithdrawalTransactions() {
+        return filterTransactionsByRemark("Withdrawal transaction");
+    }
+
+    public List<TransactionDTO> getTransferTransactions() {
+        return filterTransactionsByRemark("Fund transfer");
+    }
+
+    public List<TransactionDTO> getFailedTransactions() {
+        return filterTransactions(transaction -> "failed".equalsIgnoreCase(transaction.getStatus()));
+    }
+
+    public List<TransactionDTO> getTransactionsSorted(String sortOrder) {
+        List<Transaction> transactions = fetchTransactionsForCurrentUser();
+
+        Comparator<Transaction> comparator = Comparator.comparing(Transaction::getTransactionDate);
+        if (!"oldest".equalsIgnoreCase(sortOrder)) {
+            comparator = comparator.reversed();
+        }
+
+        return transactions.stream()
+                .sorted(comparator)
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    private List<TransactionDTO> filterTransactionsByRemark(String remark) {
+        return filterTransactions(transaction ->
+                transaction.getRemarks() != null && transaction.getRemarks().equalsIgnoreCase(remark));
+    }
+
+    private List<TransactionDTO> filterTransactions(Predicate<Transaction> predicate) {
+        return fetchTransactionsForCurrentUser().stream()
+                .filter(predicate)
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    private List<Transaction> fetchTransactionsForCurrentUser() {
         User currentUser = securityUtil.getCurrentUser();
 
         if (currentUser == null) {
             throw new ValidationException("User not authenticated");
         }
 
-        List<Transaction> transactions;
-
         if (securityUtil.isAdmin()) {
-            // Admin can view all transactions
-            transactions = transactionRepo.findAllWithDetails();
-        } else {
-            // Users can only see their own transactions (as sender or receiver)
-            transactions = transactionRepo.findByUserId(currentUser.getId());
+            return transactionRepo.findAllWithDetails();
         }
 
-        return transactions.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        return transactionRepo.findByUserId(currentUser.getId());
     }
 
     private TransactionDTO convertToDTO(Transaction transaction) {
@@ -57,4 +99,3 @@ public class TransactionService {
         return dto;
     }
 }
-
