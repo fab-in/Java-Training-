@@ -14,7 +14,6 @@ public class AuthResponseDTO {
     private String tokenType;
     private Date expiresAt;
     private Date issuedAt;
-    private Long expiresIn; // in milliseconds
     private String message;
     private UserDTO user;
 }
