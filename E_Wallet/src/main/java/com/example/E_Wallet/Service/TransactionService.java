@@ -1,5 +1,6 @@
 package com.example.E_Wallet.Service;
 
+import com.example.E_Wallet.DTO.PaginatedResponse;
 import com.example.E_Wallet.DTO.TransactionDTO;
 import com.example.E_Wallet.Model.Transaction;
 import com.example.E_Wallet.Model.User;
@@ -7,12 +8,13 @@ import com.example.E_Wallet.Repository.TransactionRepo;
 import com.example.E_Wallet.Security.SecurityUtil;
 import com.example.E_Wallet.Exceptions.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,55 +27,46 @@ public class TransactionService {
     @Autowired
     private SecurityUtil securityUtil;
 
-    public List<TransactionDTO> getTransactions() {
-        return fetchTransactionsForCurrentUser().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
+    
+    private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final int MAX_PAGE_SIZE = 100; // Maximum allowed page size to prevent abuse
 
-    public List<TransactionDTO> getCreditTransactions() {
-        return filterTransactionsByRemark("Credit transaction");
-    }
+    
+    public PaginatedResponse<TransactionDTO> getTransactions(String type, Pageable pageable) {
+        Pageable validatedPageable = validateAndAdjustPageable(pageable);
 
-    public List<TransactionDTO> getWithdrawalTransactions() {
-        return filterTransactionsByRemark("Withdrawal transaction");
-    }
-
-    public List<TransactionDTO> getTransferTransactions() {
-        return filterTransactionsByRemark("Fund transfer");
-    }
-
-    public List<TransactionDTO> getFailedTransactions() {
-        return filterTransactions(transaction -> "failed".equalsIgnoreCase(transaction.getStatus()));
-    }
-
-    public List<TransactionDTO> getTransactionsSorted(String sortOrder) {
-        List<Transaction> transactions = fetchTransactionsForCurrentUser();
-
-        Comparator<Transaction> comparator = Comparator.comparing(Transaction::getTransactionDate);
-        if (!"oldest".equalsIgnoreCase(sortOrder)) {
-            comparator = comparator.reversed();
+        String normalizedType = (type == null || type.trim().isEmpty()) 
+            ? "all" 
+            : type.trim().toLowerCase();
+        
+        Page<Transaction> transactionPage;
+        switch (normalizedType) {
+            case "credits":
+                transactionPage = filterTransactionsByRemark("Credit transaction", validatedPageable);
+                break;
+                
+            case "withdrawals":
+                transactionPage = filterTransactionsByRemark("Withdrawal transaction", validatedPageable);
+                break;
+                
+            case "transfers":
+                transactionPage = filterTransactionsByRemark("Fund transfer", validatedPageable);
+                break;
+                
+            case "failed":
+                transactionPage = filterFailedTransactions(validatedPageable);
+                break;
+                
+            case "all":
+            default:
+                transactionPage = fetchTransactionsForCurrentUser(validatedPageable);
+                break;
         }
-
-        return transactions.stream()
-                .sorted(comparator)
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        
+        return convertToPaginatedResponse(transactionPage);
     }
 
-    private List<TransactionDTO> filterTransactionsByRemark(String remark) {
-        return filterTransactions(transaction ->
-                transaction.getRemarks() != null && transaction.getRemarks().equalsIgnoreCase(remark));
-    }
-
-    private List<TransactionDTO> filterTransactions(Predicate<Transaction> predicate) {
-        return fetchTransactionsForCurrentUser().stream()
-                .filter(predicate)
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    private List<Transaction> fetchTransactionsForCurrentUser() {
+    private Page<Transaction> filterTransactionsByRemark(String remark, Pageable pageable) {
         User currentUser = securityUtil.getCurrentUser();
 
         if (currentUser == null) {
@@ -81,10 +74,78 @@ public class TransactionService {
         }
 
         if (securityUtil.isAdmin()) {
-            return transactionRepo.findAllWithDetails();
+            return transactionRepo.findAllByRemark(remark, pageable);
+        } else {
+            return transactionRepo.findByUserIdAndRemark(currentUser.getId(), remark, pageable);
+        }
+    }
+    
+    private Page<Transaction> filterFailedTransactions(Pageable pageable) {
+        User currentUser = securityUtil.getCurrentUser();
+
+        if (currentUser == null) {
+            throw new ValidationException("User not authenticated");
         }
 
-        return transactionRepo.findByUserId(currentUser.getId());
+        if (securityUtil.isAdmin()) {
+            return transactionRepo.findAllFailedTransactions(pageable);
+        } else {
+            return transactionRepo.findFailedTransactionsByUserId(currentUser.getId(), pageable);
+        }
+    }
+
+    private Page<Transaction> fetchTransactionsForCurrentUser(Pageable pageable) {
+        User currentUser = securityUtil.getCurrentUser();
+
+        if (currentUser == null) {
+            throw new ValidationException("User not authenticated");
+        }
+
+        if (securityUtil.isAdmin()) {
+            return transactionRepo.findAllWithDetails(pageable);
+        }
+        return transactionRepo.findByUserId(currentUser.getId(), pageable);
+    }
+
+    private PaginatedResponse<TransactionDTO> convertToPaginatedResponse(Page<Transaction> transactionPage) {
+        
+        List<TransactionDTO> content = transactionPage.getContent().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+       
+        PaginatedResponse<TransactionDTO> response = new PaginatedResponse<>();
+        response.setContent(content);
+        response.setTotalElements(transactionPage.getTotalElements());
+        response.setTotalPages(transactionPage.getTotalPages());
+        response.setCurrentPage(transactionPage.getNumber());
+        response.setPageSize(transactionPage.getSize());
+        response.setHasNext(transactionPage.hasNext());
+        response.setHasPrevious(transactionPage.hasPrevious());
+        response.setFirst(transactionPage.isFirst());
+        response.setLast(transactionPage.isLast());
+
+        return response;
+    }
+
+    private Pageable validateAndAdjustPageable(Pageable pageable) {
+        int pageSize = pageable.getPageSize();
+        int pageNumber = pageable.getPageNumber();
+
+        
+        if (pageSize > MAX_PAGE_SIZE) {
+            pageSize = MAX_PAGE_SIZE;
+        } else if (pageSize < 1) {
+            pageSize = DEFAULT_PAGE_SIZE;
+        }
+
+        
+        if (pageNumber < 0) {
+            pageNumber = 0;
+        }
+
+        
+        return PageRequest.of(pageNumber, pageSize, pageable.getSort());
     }
 
     private TransactionDTO convertToDTO(Transaction transaction) {
