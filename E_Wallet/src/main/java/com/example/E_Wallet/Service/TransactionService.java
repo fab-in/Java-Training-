@@ -27,6 +27,12 @@ public class TransactionService {
     @Autowired
     private SecurityUtil securityUtil;
 
+    @Autowired
+    private StatementCsvBuilder statementCsvBuilder;
+
+    @Autowired
+    private EmailService emailService;
+
     
     private static final int DEFAULT_PAGE_SIZE = 20;
     private static final int MAX_PAGE_SIZE = 100; // Maximum allowed page size to prevent abuse
@@ -158,5 +164,23 @@ public class TransactionService {
         dto.setStatus(transaction.getStatus());
         dto.setRemarks(transaction.getRemarks());
         return dto;
+    }
+
+    public void generateAndEmailStatement() throws jakarta.mail.MessagingException {
+        User currentUser = securityUtil.getCurrentUser();
+
+        if (currentUser == null) {
+            throw new ValidationException("User not authenticated");
+        }
+
+        List<Transaction> transactions = transactionRepo.findAllByUserId(currentUser.getId());
+
+        byte[] csvBytes = statementCsvBuilder.buildStatementCsv(currentUser, transactions);
+
+        emailService.sendStatementEmail(
+                currentUser.getEmail(),
+                currentUser.getName(),
+                csvBytes
+        );
     }
 }
