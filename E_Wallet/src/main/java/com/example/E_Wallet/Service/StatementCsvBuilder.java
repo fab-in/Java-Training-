@@ -2,109 +2,132 @@ package com.example.E_Wallet.Service;
 
 import com.example.E_Wallet.Model.Transaction;
 import com.example.E_Wallet.Model.User;
+import com.example.E_Wallet.Model.Wallet;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
-import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class StatementCsvBuilder {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    private static final NumberFormat CURRENCY_FORMATTER = NumberFormat.getCurrencyInstance(Locale.US);
-
-    /**
-     * Builds a CSV statement from user and transaction data
-     * 
-     * @param user The user for whom the statement is generated
-     * @param transactions List of transactions to include in the statement
-     * @return CSV content as byte array
-     */
-    public byte[] buildStatementCsv(User user, List<Transaction> transactions) {
+    public byte[] buildStatementCsv(User user, List<Transaction> transactions, List<Wallet> userWallets) {
         StringBuilder csv = new StringBuilder();
 
-        // Add header information
-        csv.append("E-Wallet Transaction Statement\n");
-        csv.append("================================\n\n");
-        csv.append("User Information:\n");
-        csv.append("Name,").append(escapeCsvField(user.getName())).append("\n");
-        csv.append("Email,").append(escapeCsvField(user.getEmail())).append("\n");
-        csv.append("Phone Number,").append(escapeCsvField(user.getPhoneNumber())).append("\n");
-        csv.append("Statement Generated At,").append(java.time.LocalDateTime.now().format(DATE_FORMATTER)).append("\n");
-        csv.append("\n");
+        csv.append("Account Holder,").append(escapeCsvField(user != null ? user.getName() : "")).append("\n");
+        csv.append("Account Details,").append(escapeCsvField(buildAccountDetails(userWallets))).append("\n\n");
 
-        // Add transaction summary
-        double totalDebits = transactions.stream()
-                .filter(t -> t.getSenderWallet().getUser().getId().equals(user.getId()))
-                .mapToDouble(Transaction::getAmount)
-                .sum();
-        
-        double totalCredits = transactions.stream()
-                .filter(t -> t.getReceiverWallet().getUser().getId().equals(user.getId()))
-                .mapToDouble(Transaction::getAmount)
-                .sum();
+        // CSV Header - matching table structure provided
+        csv.append("Transaction ID,Date,Amount,Status,Remarks,Sender Wallet ID,Receiver Wallet ID\n");
 
-        csv.append("Summary:\n");
-        csv.append("Total Transactions,").append(transactions.size()).append("\n");
-        csv.append("Total Debits,").append(CURRENCY_FORMATTER.format(totalDebits)).append("\n");
-        csv.append("Total Credits,").append(CURRENCY_FORMATTER.format(totalCredits)).append("\n");
-        csv.append("\n");
-
-        // Add transaction table header
-        csv.append("Transaction Details:\n");
-        csv.append("Transaction ID,Date,Type,Amount,Status,Remarks,Sender Wallet,Receiver Wallet\n");
-
-        // Add transaction rows
-        for (Transaction transaction : transactions) {
-            String transactionId = transaction.getId().toString();
-            String date = transaction.getTransactionDate().format(DATE_FORMATTER);
-            
-            // Determine transaction type from user's perspective
-            String type;
-            double amount;
-            if (transaction.getSenderWallet().getUser().getId().equals(user.getId())) {
-                type = "DEBIT";
-                amount = -transaction.getAmount(); // Negative for debits
-            } else {
-                type = "CREDIT";
-                amount = transaction.getAmount();
-            }
-            
-            String formattedAmount = CURRENCY_FORMATTER.format(amount);
-            String status = transaction.getStatus();
-            String remarks = escapeCsvField(transaction.getRemarks());
-            String senderWallet = transaction.getSenderWallet().getAccountNumber();
-            String receiverWallet = transaction.getReceiverWallet().getAccountNumber();
-
-            csv.append(transactionId).append(",")
-               .append(date).append(",")
-               .append(type).append(",")
-               .append(formattedAmount).append(",")
-               .append(status).append(",")
-               .append(remarks).append(",")
-               .append(senderWallet).append(",")
-               .append(receiverWallet).append("\n");
+        if (transactions.isEmpty()) {
+            csv.append("\nFinal Balance,").append(formatAmount(calculateTotalBalance(userWallets))).append("\n");
+            return csv.toString().getBytes(StandardCharsets.UTF_8);
         }
 
+        // Sort transactions chronologically (newest first for readability)
+        List<Transaction> sortedTransactions = new ArrayList<>(transactions);
+        sortedTransactions.sort(Comparator.comparing(Transaction::getTransactionDate));
+        for (int i = sortedTransactions.size() - 1; i >= 0; i--) {
+            Transaction transaction = sortedTransactions.get(i);
+            String statusValue = normalizeStatus(transaction.getStatus());
+            boolean isSuccessful = "SUCCESS".equals(statusValue);
+
+            csv.append(valueOrEmpty(transaction != null ? transaction.getId() : null)).append(",")
+               .append(formatDate(transaction != null ? transaction.getTransactionDate() : null)).append(",")
+               .append(isSuccessful ? formatAmount(transaction.getAmount()) : "")
+               .append(",")
+               .append(statusValue).append(",")
+               .append(escapeCsvField(transaction != null ? transaction.getRemarks() : "")).append(",")
+               .append(safeWalletReference(transaction != null ? transaction.getSenderWallet() : null)).append(",")
+               .append(safeWalletReference(transaction != null ? transaction.getReceiverWallet() : null))
+               .append("\n");
+        }
+
+        csv.append("\nFinal Balance,").append(formatAmount(calculateTotalBalance(userWallets))).append("\n");
         return csv.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    /**
-     * Escapes CSV fields that contain commas, quotes, or newlines
-     */
+    private String formatDate(java.time.LocalDateTime dateTime) {
+        return dateTime == null ? "" : DATE_FORMATTER.format(dateTime);
+    }
+
+    private String formatAmount(double amount) {
+        return String.format(Locale.US, "%.2f", amount);
+    }
+
+    private String buildAccountDetails(List<Wallet> wallets) {
+        if (wallets == null || wallets.isEmpty()) {
+            return "";
+        }
+        return wallets.stream()
+                .map(wallet -> {
+                    if (wallet == null) {
+                        return "";
+                    }
+                    StringBuilder builder = new StringBuilder();
+                    if (wallet.getWalletName() != null && !wallet.getWalletName().isBlank()) {
+                        builder.append(wallet.getWalletName()).append(" ");
+                    }
+                    if (wallet.getAccountNumber() != null && !wallet.getAccountNumber().isBlank()) {
+                        builder.append("(").append(wallet.getAccountNumber()).append(")");
+                    }
+                    return builder.toString().trim();
+                })
+                .filter(entry -> !entry.isEmpty())
+                .collect(Collectors.joining(" | "));
+    }
+
+    private String safeWalletReference(Wallet wallet) {
+        if (wallet == null) {
+            return "";
+        }
+        UUID walletId = wallet.getId();
+        return walletId != null ? walletId.toString() : "";
+    }
+
+    private String valueOrEmpty(UUID value) {
+        return value != null ? value.toString() : "";
+    }
+
+    private String normalizeStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return "";
+        }
+        String upper = status.trim().toUpperCase(Locale.US);
+        if (upper.contains("SUCCESS")) {
+            return "SUCCESS";
+        }
+        if (upper.contains("FAIL")) {
+            return "FAILED";
+        }
+        return upper;
+    }
+
+    private double calculateTotalBalance(List<Wallet> wallets) {
+        if (wallets == null) {
+            return 0.0;
+        }
+        return wallets.stream()
+                .filter(wallet -> wallet != null)
+                .mapToDouble(Wallet::getBalance)
+                .sum();
+    }
+
     private String escapeCsvField(String field) {
         if (field == null) {
             return "";
         }
-        
-        // If field contains comma, quote, or newline, wrap in quotes and escape internal quotes
         if (field.contains(",") || field.contains("\"") || field.contains("\n")) {
             return "\"" + field.replace("\"", "\"\"") + "\"";
         }
-        
         return field;
     }
 }

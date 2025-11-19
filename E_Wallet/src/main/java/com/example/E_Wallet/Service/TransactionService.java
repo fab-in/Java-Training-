@@ -5,6 +5,7 @@ import com.example.E_Wallet.DTO.TransactionDTO;
 import com.example.E_Wallet.Model.Transaction;
 import com.example.E_Wallet.Model.User;
 import com.example.E_Wallet.Repository.TransactionRepo;
+import com.example.E_Wallet.Repository.WalletRepo;
 import com.example.E_Wallet.Security.SecurityUtil;
 import com.example.E_Wallet.Exceptions.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,9 @@ public class TransactionService {
 
     @Autowired
     private TransactionRepo transactionRepo;
+
+    @Autowired
+    private WalletRepo walletRepo;
 
     @Autowired
     private SecurityUtil securityUtil;
@@ -173,9 +177,11 @@ public class TransactionService {
             throw new ValidationException("User not authenticated");
         }
 
+        // Fetch transactions and wallets within the transactional method
         List<Transaction> transactions = transactionRepo.findAllByUserId(currentUser.getId());
+        List<com.example.E_Wallet.Model.Wallet> userWallets = walletRepo.findByUserId(currentUser.getId());
 
-        byte[] csvBytes = statementCsvBuilder.buildStatementCsv(currentUser, transactions);
+        byte[] csvBytes = statementCsvBuilder.buildStatementCsv(currentUser, transactions, userWallets);
 
         emailService.sendStatementEmail(
                 currentUser.getEmail(),
