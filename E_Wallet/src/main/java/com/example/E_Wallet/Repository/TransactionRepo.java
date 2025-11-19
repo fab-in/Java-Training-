@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import com.example.E_Wallet.Model.Transaction;
+import java.util.List;
 import java.util.UUID;
 
 public interface TransactionRepo extends JpaRepository<Transaction, UUID> {
@@ -69,5 +70,15 @@ public interface TransactionRepo extends JpaRepository<Transaction, UUID> {
            "WHERE LOWER(t.status) = 'failed' " +
            "ORDER BY t.transactionDate DESC")
     Page<Transaction> findAllFailedTransactions(Pageable pageable);
+    
+    // Get all transactions for a user without pagination (for statement generation)
+    @Query("SELECT DISTINCT t FROM Transaction t " +
+           "LEFT JOIN FETCH t.senderWallet sw " +
+           "LEFT JOIN FETCH sw.user su " +
+           "LEFT JOIN FETCH t.receiverWallet rw " +
+           "LEFT JOIN FETCH rw.user ru " +
+           "WHERE su.id = :userId OR ru.id = :userId " +
+           "ORDER BY t.transactionDate DESC")
+    List<Transaction> findAllByUserId(@Param("userId") UUID userId);
 }
 
