@@ -1,5 +1,6 @@
 package com.example.E_Wallet.Controllers;
 
+import com.example.E_Wallet.DTO.MessageResponseDTO;
 import com.example.E_Wallet.DTO.PaginatedResponse;
 import com.example.E_Wallet.DTO.TransactionDTO;
 import com.example.E_Wallet.Service.TransactionService;
@@ -7,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -78,6 +80,21 @@ public class TransactionController {
             }
         }
         return PageRequest.of(page, size);
+    }
+
+    @GetMapping("/transactions/statement")
+    public ResponseEntity<MessageResponseDTO> getStatement() {
+        try {
+            transactionService.generateAndEmailStatement();
+            
+            MessageResponseDTO response = new MessageResponseDTO();
+            response.setMessage("Transaction statement has been sent to your registered email address");
+            return ResponseEntity.ok(response);
+        } catch (jakarta.mail.MessagingException e) {
+            MessageResponseDTO response = new MessageResponseDTO();
+            response.setMessage("Failed to send email");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 }
 
