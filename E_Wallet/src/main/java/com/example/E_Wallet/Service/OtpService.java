@@ -1,6 +1,7 @@
 package com.example.E_Wallet.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
@@ -32,6 +33,9 @@ public class OtpService {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     private static final int OTP_LENGTH = 6;
     private static final int OTP_EXPIRY_MINUTES = 10;
     private static final int MAX_ATTEMPTS = 3;
@@ -52,12 +56,15 @@ public class OtpService {
             
             Otp otp = existingOtp.get();
             String newOtpCode = generateOtp();
-            otp.setOtpCode(newOtpCode);
+
+            String hashedOtp = passwordEncoder.encode(newOtpCode);
+            otp.setOtpCode(hashedOtp);
             otp.setCreatedAt(LocalDateTime.now());
             otp.setExpiresAt(LocalDateTime.now().plusMinutes(OTP_EXPIRY_MINUTES));
             otp.setAttemptCount(0);
             otp.setIsExpired(false);
             otp = otpRepo.save(otp);
+            // Send plain OTP in email (not hashed)
             sendOtpEmail(userEmail, newOtpCode, transactionType);
             return otp;
         }
@@ -66,10 +73,13 @@ public class OtpService {
         String otpCode = generateOtp();
         LocalDateTime now = LocalDateTime.now();
         
+        
+        String hashedOtp = passwordEncoder.encode(otpCode);
+        
         Otp otp = new Otp();
         otp.setTransactionId(transactionId);
         otp.setUserId(userId);
-        otp.setOtpCode(otpCode);
+        otp.setOtpCode(hashedOtp); // Store hashed OTP
         otp.setUserEmail(userEmail);
         otp.setTransactionType(transactionType);
         otp.setCreatedAt(now);
@@ -79,6 +89,7 @@ public class OtpService {
         otp.setIsExpired(false);
 
         otp = otpRepo.save(otp);
+        // Send plain OTP in email 
         sendOtpEmail(userEmail, otpCode, transactionType);
         return otp;
     }
@@ -103,7 +114,8 @@ public class OtpService {
         }
 
         
-        if (otp.getOtpCode().equals(enteredOtp)) {
+        // Verify entered OTP against hashed OTP in database
+        if (passwordEncoder.matches(enteredOtp, otp.getOtpCode())) {
             markOtpAsVerified(transactionId);
             return true;
         } else {

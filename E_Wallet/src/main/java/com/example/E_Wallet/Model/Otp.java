@@ -21,8 +21,8 @@ public class Otp {
     @Column(name = "transaction_id", nullable = false, unique = true)
     private UUID transactionId;
 
-    @Column(name = "otp_code", nullable = false, length = 6)
-    private String otpCode;
+    @Column(name = "otp_code", nullable = false, length = 255)
+    private String otpCode; 
 
     @Column(name = "user_id", nullable = false)
     private UUID userId;

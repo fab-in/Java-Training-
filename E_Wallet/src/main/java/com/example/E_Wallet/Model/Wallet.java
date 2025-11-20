@@ -38,7 +38,8 @@ public class Wallet {
 
     private double balance;
 
-    private String passcode;
+    @Column(name = "passcode", length = 255)
+    private String passcode; 
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

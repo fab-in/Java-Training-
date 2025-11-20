@@ -1,6 +1,7 @@
 package com.example.E_Wallet.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -46,6 +47,9 @@ public class WalletService {
 
     @Autowired
     private PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private OtpService otpService;
@@ -180,7 +184,9 @@ public class WalletService {
             if (!walletUpdateDTO.getPasscode().matches("^\\d{4}$")) {
                 throw new ValidationException("Passcode must be exactly 4 digits");
             }
-            wallet.setPasscode(walletUpdateDTO.getPasscode());
+            // Hash the passcode before saving
+            String hashedPasscode = passwordEncoder.encode(walletUpdateDTO.getPasscode());
+            wallet.setPasscode(hashedPasscode);
         }
 
         Wallet updatedWallet = walletRepo.save(wallet);
@@ -236,7 +242,8 @@ public class WalletService {
             throw new ValidationException("Access denied: You can only credit your own wallets");
         }
 
-        if (!wallet.getPasscode().equals(creditRequestDTO.getPasscode())) {
+        // Verify entered passcode against hashed passcode in database
+        if (!passwordEncoder.matches(creditRequestDTO.getPasscode(), wallet.getPasscode())) {
             throw new ValidationException("Invalid passcode");
         }
 
@@ -276,7 +283,8 @@ public class WalletService {
             throw new ValidationException("Access denied: You can only withdraw from your own wallets");
         }
 
-        if (!wallet.getPasscode().equals(withdrawalRequestDTO.getPasscode())) {
+        // Verify entered passcode against hashed passcode in database
+        if (!passwordEncoder.matches(withdrawalRequestDTO.getPasscode(), wallet.getPasscode())) {
             throw new ValidationException("Invalid passcode");
         }
 
@@ -327,7 +335,8 @@ public class WalletService {
             throw new ValidationException("Access denied: You can only transfer from your own wallets");
         }
 
-        if (!sourceWallet.getPasscode().equals(transferRequestDTO.getPasscode())) {
+        // Verify entered passcode against hashed passcode in database
+        if (!passwordEncoder.matches(transferRequestDTO.getPasscode(), sourceWallet.getPasscode())) {
             throw new ValidationException("Invalid passcode");
         }
 
@@ -392,7 +401,9 @@ public class WalletService {
         wallet.setWalletName(walletCreateDTO.getWalletName());
         wallet.setAccountNumber(walletCreateDTO.getAccountNumber());
         wallet.setBalance(walletCreateDTO.getBalance());
-        wallet.setPasscode(walletCreateDTO.getPasscode());
+        // Hash the passcode before saving
+        String hashedPasscode = passwordEncoder.encode(walletCreateDTO.getPasscode());
+        wallet.setPasscode(hashedPasscode);
         return wallet;
     }
 
