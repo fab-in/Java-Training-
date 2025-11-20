@@ -224,34 +224,41 @@ public class WalletService {
     }
 
     public UUID creditWallet(CreditRequestDTO creditRequestDTO) {
-        if (creditRequestDTO.getAmount() == null || creditRequestDTO.getAmount() <= 0) {
+        UUID walletId = creditRequestDTO.getWalletId();
+        Double amount = creditRequestDTO.getAmount();
+        
+        if (amount == null || amount <= 0) {
+            createFailedTransaction(walletId, walletId, amount, "Amount must be greater than 0");
             throw new ValidationException("Amount must be greater than 0");
         }
 
-        Wallet wallet = walletRepo.findById(creditRequestDTO.getWalletId())
+        Wallet wallet = walletRepo.findById(walletId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Wallet not found with id: " + creditRequestDTO.getWalletId()));
+                        "Wallet not found with id: " + walletId));
 
         User currentUser = securityUtil.getCurrentUser();
         if (currentUser == null) {
+            createFailedTransaction(walletId, walletId, amount, "User not authenticated");
             throw new ValidationException("User not authenticated");
         }
 
         
         if (!wallet.getUser().getId().equals(currentUser.getId())) {
+            createFailedTransaction(walletId, walletId, amount, "Access denied: You can only credit your own wallets");
             throw new ValidationException("Access denied: You can only credit your own wallets");
         }
 
         // Verify entered passcode against hashed passcode in database
         if (!passwordEncoder.matches(creditRequestDTO.getPasscode(), wallet.getPasscode())) {
+            createFailedTransaction(walletId, walletId, amount, "Invalid passcode");
             throw new ValidationException("Invalid passcode");
         }
 
         
         Transaction pendingTransaction = createPendingTransaction(
-                creditRequestDTO.getWalletId(),
-                creditRequestDTO.getWalletId(),
-                creditRequestDTO.getAmount(),
+                walletId,
+                walletId,
+                amount,
                 "Credit transaction");
 
         
@@ -265,38 +272,46 @@ public class WalletService {
     }
 
     public UUID withdrawWallet(WithdrawalRequestDTO withdrawalRequestDTO) {
-        if (withdrawalRequestDTO.getAmount() == null || withdrawalRequestDTO.getAmount() <= 0) {
+        UUID walletId = withdrawalRequestDTO.getWalletId();
+        Double amount = withdrawalRequestDTO.getAmount();
+        
+        if (amount == null || amount <= 0) {
+            createFailedTransaction(walletId, walletId, amount, "Amount must be greater than 0");
             throw new ValidationException("Amount must be greater than 0");
         }
 
-        Wallet wallet = walletRepo.findById(withdrawalRequestDTO.getWalletId())
+        Wallet wallet = walletRepo.findById(walletId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Wallet not found with id: " + withdrawalRequestDTO.getWalletId()));
+                        "Wallet not found with id: " + walletId));
 
         User currentUser = securityUtil.getCurrentUser();
         if (currentUser == null) {
+            createFailedTransaction(walletId, walletId, amount, "User not authenticated");
             throw new ValidationException("User not authenticated");
         }
 
         
         if (!wallet.getUser().getId().equals(currentUser.getId())) {
+            createFailedTransaction(walletId, walletId, amount, "Access denied: You can only withdraw from your own wallets");
             throw new ValidationException("Access denied: You can only withdraw from your own wallets");
         }
 
         // Verify entered passcode against hashed passcode in database
         if (!passwordEncoder.matches(withdrawalRequestDTO.getPasscode(), wallet.getPasscode())) {
+            createFailedTransaction(walletId, walletId, amount, "Invalid passcode");
             throw new ValidationException("Invalid passcode");
         }
 
-        if (wallet.getBalance() < withdrawalRequestDTO.getAmount()) {
-            throw new ValidationException("Insufficient balance. Available balance: " + wallet.getBalance());
+        if (wallet.getBalance() < amount) {
+            createFailedTransaction(walletId, walletId, amount, "Insufficient balance");
+            throw new ValidationException("Insufficient balance");
         }
 
         
         Transaction pendingTransaction = createPendingTransaction(
-                withdrawalRequestDTO.getWalletId(),
-                withdrawalRequestDTO.getWalletId(),
-                withdrawalRequestDTO.getAmount(),
+                walletId,
+                walletId,
+                amount,
                 "Withdrawal transaction");
 
         
@@ -310,45 +325,55 @@ public class WalletService {
     }
 
     public UUID transferFunds(TransferRequestDTO transferRequestDTO) {
-        if (transferRequestDTO.getAmount() == null || transferRequestDTO.getAmount() <= 0) {
+        UUID sourceWalletId = transferRequestDTO.getSourceWalletId();
+        UUID destinationWalletId = transferRequestDTO.getDestinationWalletId();
+        Double amount = transferRequestDTO.getAmount();
+        
+        if (amount == null || amount <= 0) {
+            createFailedTransaction(sourceWalletId, destinationWalletId, amount, "Amount must be greater than 0");
             throw new ValidationException("Amount must be greater than 0");
         }
 
-        if (transferRequestDTO.getSourceWalletId().equals(transferRequestDTO.getDestinationWalletId())) {
+        if (sourceWalletId.equals(destinationWalletId)) {
+            createFailedTransaction(sourceWalletId, destinationWalletId, amount, "Source and destination wallets cannot be the same");
             throw new ValidationException("Source and destination wallets cannot be the same");
         }
 
-        Wallet sourceWallet = walletRepo.findById(transferRequestDTO.getSourceWalletId())
+        Wallet sourceWallet = walletRepo.findById(sourceWalletId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Source wallet not found with id: " + transferRequestDTO.getSourceWalletId()));
+                        "Source wallet not found with id: " + sourceWalletId));
 
-        Wallet destinationWallet = walletRepo.findById(transferRequestDTO.getDestinationWalletId())
+        Wallet destinationWallet = walletRepo.findById(destinationWalletId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Destination wallet not found with id: " + transferRequestDTO.getDestinationWalletId()));
+                        "Destination wallet not found with id: " + destinationWalletId));
 
         User currentUser = securityUtil.getCurrentUser();
         if (currentUser == null) {
+            createFailedTransaction(sourceWalletId, destinationWalletId, amount, "User not authenticated");
             throw new ValidationException("User not authenticated");
         }
 
         if (!sourceWallet.getUser().getId().equals(currentUser.getId())) {
+            createFailedTransaction(sourceWalletId, destinationWalletId, amount, "Access denied: You can only transfer from your own wallets");
             throw new ValidationException("Access denied: You can only transfer from your own wallets");
         }
 
         // Verify entered passcode against hashed passcode in database
         if (!passwordEncoder.matches(transferRequestDTO.getPasscode(), sourceWallet.getPasscode())) {
+            createFailedTransaction(sourceWalletId, destinationWalletId, amount, "Invalid passcode");
             throw new ValidationException("Invalid passcode");
         }
 
-        if (sourceWallet.getBalance() < transferRequestDTO.getAmount()) {
-            throw new ValidationException("Insufficient balance. Available balance: " + sourceWallet.getBalance());
+        if (sourceWallet.getBalance() < amount) {
+            createFailedTransaction(sourceWalletId, destinationWalletId, amount, "Insufficient balance");
+            throw new ValidationException("Insufficient balance");
         }
 
         
         Transaction pendingTransaction = createPendingTransaction(
-                transferRequestDTO.getSourceWalletId(),
-                transferRequestDTO.getDestinationWalletId(),
-                transferRequestDTO.getAmount(),
+                sourceWalletId,
+                destinationWalletId,
+                amount,
                 "Fund transfer");
 
         
