@@ -1,9 +1,12 @@
 package com.example.E_Wallet.Controllers;
 
 import com.example.E_Wallet.DTO.MessageResponseDTO;
+import com.example.E_Wallet.DTO.OtpVerificationDTO;
 import com.example.E_Wallet.DTO.PaginatedResponse;
 import com.example.E_Wallet.DTO.TransactionDTO;
+import com.example.E_Wallet.Service.OtpService;
 import com.example.E_Wallet.Service.TransactionService;
+import com.example.E_Wallet.Service.WalletService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -11,14 +14,25 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 public class TransactionController {
 
     @Autowired
     private TransactionService transactionService;
+
+    @Autowired
+    private OtpService otpService;
+
+    @Autowired
+    private WalletService walletService;
 
     // Default pagination values
     private static final int DEFAULT_PAGE = 0;  // First page (0-indexed)
@@ -98,6 +112,41 @@ public class TransactionController {
             response.setMessage("Failed to send email");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
+    }
+
+    @PostMapping("/transactions/verify-otp")
+    public ResponseEntity<Map<String, String>> verifyOtp(@Valid @RequestBody OtpVerificationDTO otpVerificationDTO) {
+        try {
+            
+            boolean isVerified = otpService.verifyOtp(
+                    otpVerificationDTO.getTransactionId(),
+                    otpVerificationDTO.getOtp());
+
+            if (isVerified) {
+                walletService.processTransactionAfterOtpVerification(otpVerificationDTO.getTransactionId());
+
+                Map<String, String> response = new HashMap<>();
+                response.put("message", "OTP verified successfully. Transaction completed.");
+                response.put("status", "success");
+                return ResponseEntity.ok(response);
+            }
+        } catch (com.example.E_Wallet.Exceptions.ValidationException e) {
+            Map<String, String> response = new HashMap<>();
+            if (e.getMessage().contains("Transaction has failed")) {
+                response.put("message", e.getMessage());
+                response.put("status", "failed");
+                return ResponseEntity.badRequest().body(response);
+            } else {
+                response.put("message", e.getMessage());
+                response.put("status", "error");
+                return ResponseEntity.badRequest().body(response);
+            }
+        }
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "OTP verification failed");
+        response.put("status", "failed");
+        return ResponseEntity.badRequest().body(response);
     }
 }
 

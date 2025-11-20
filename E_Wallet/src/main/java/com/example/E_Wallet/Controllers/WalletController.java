@@ -69,27 +69,30 @@ public class WalletController {
     }
 
     @PostMapping("/wallets/credit")
-    public ResponseEntity<Map<String, String>> creditWallet(@Valid @RequestBody CreditRequestDTO creditRequestDTO) {
-        walletService.creditWallet(creditRequestDTO);
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "Amount credited successfully");
+    public ResponseEntity<Map<String, Object>> creditWallet(@Valid @RequestBody CreditRequestDTO creditRequestDTO) {
+        UUID transactionId = walletService.creditWallet(creditRequestDTO);
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "OTP has been sent to your email. Please verify to complete the transaction.");
+        response.put("transactionId", transactionId.toString());
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/wallets/withdraw")
-    public ResponseEntity<Map<String, String>> withdrawWallet(
+    public ResponseEntity<Map<String, Object>> withdrawWallet(
             @Valid @RequestBody WithdrawalRequestDTO withdrawalRequestDTO) {
-        walletService.withdrawWallet(withdrawalRequestDTO);
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "Amount withdrawn successfully");
+        UUID transactionId = walletService.withdrawWallet(withdrawalRequestDTO);
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "OTP has been sent to your email. Please verify to complete the transaction.");
+        response.put("transactionId", transactionId.toString());
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/wallets/transfer")
-    public ResponseEntity<Map<String, String>> transferFunds(@Valid @RequestBody TransferRequestDTO transferRequestDTO) {
-        walletService.transferFunds(transferRequestDTO);
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "Funds transferred successfully");
+    public ResponseEntity<Map<String, Object>> transferFunds(@Valid @RequestBody TransferRequestDTO transferRequestDTO) {
+        UUID transactionId = walletService.transferFunds(transferRequestDTO);
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "OTP has been sent to your email. Please verify to complete the transaction.");
+        response.put("transactionId", transactionId.toString());
         return ResponseEntity.ok(response);
     }
 }
