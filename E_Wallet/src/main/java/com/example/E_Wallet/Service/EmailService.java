@@ -29,7 +29,7 @@ public class EmailService {
         helper.setSubject("Your E-Wallet Transaction Statement");
         
         String emailBody = buildEmailBody(userName);
-        helper.setText(emailBody, true); // true = HTML format
+        helper.setText(emailBody, false); 
 
         String fileName = "wallet-statement-" + java.time.LocalDate.now() + ".csv";
         helper.addAttachment(fileName, new ByteArrayResource(csvBytes), "text/csv");
@@ -53,22 +53,15 @@ public class EmailService {
     }
 
     private String buildEmailBody(String userName) {
-        return "<html>" +
-               "<body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>" +
-               "<div style='max-width: 600px; margin: 0 auto; padding: 20px;'>" +
-               "<h2 style='color: #4CAF50;'>E-Wallet Transaction Statement</h2>" +
-               "<p>Dear " + (userName != null ? userName : "User") + ",</p>" +
-               "<p>Thank you for using our E-Wallet service. Please find your transaction statement attached to this email.</p>" +
-               "<p>The statement includes all your transaction history with details such as:</p>" +
-               "<ul>" +
-               "<li>Transaction dates and times</li>" +
-               "<li>Transaction types (Debit/Credit)</li>" +
-               "<li>Amounts</li>" +
-               "<li>Transaction status</li>" +
-               "<li>Wallet account numbers</li>" +
-               "</ul>"  +
-               "</body>" +
-               "</html>";
+        return "E-Wallet Transaction Statement\n\n" +
+               "Dear " + (userName != null ? userName : "User") + ",\n\n" +
+               "Thank you for using our E-Wallet service. Please find your transaction statement attached to this email.\n\n" +
+               "The statement includes all your transaction history with details such as:\n" +
+               "- Transaction dates and times\n" +
+               "- Transaction types (Debit/Credit)\n" +
+               "- Amounts\n" +
+               "- Transaction status\n" +
+               "- Wallet account numbers\n";
     }
 }
 
