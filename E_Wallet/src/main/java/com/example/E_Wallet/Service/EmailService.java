@@ -37,6 +37,21 @@ public class EmailService {
         mailSender.send(message);
     }
 
+    public void sendSimpleEmail(String toEmail, String subject, String body) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(
+                message, 
+                false, 
+                StandardCharsets.UTF_8.name()
+        );
+
+        helper.setTo(toEmail);
+        helper.setSubject(subject);
+        helper.setText(body, false); 
+
+        mailSender.send(message);
+    }
+
     private String buildEmailBody(String userName) {
         return "<html>" +
                "<body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>" +
