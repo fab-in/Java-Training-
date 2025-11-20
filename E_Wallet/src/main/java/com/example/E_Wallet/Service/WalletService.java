@@ -226,7 +226,7 @@ public class WalletService {
     public UUID creditWallet(CreditRequestDTO creditRequestDTO) {
         UUID walletId = creditRequestDTO.getWalletId();
         Double amount = creditRequestDTO.getAmount();
-        
+
         if (amount == null || amount <= 0) {
             createFailedTransaction(walletId, walletId, amount, "Amount must be greater than 0");
             throw new ValidationException("Amount must be greater than 0");
@@ -242,7 +242,6 @@ public class WalletService {
             throw new ValidationException("User not authenticated");
         }
 
-        
         if (!wallet.getUser().getId().equals(currentUser.getId())) {
             createFailedTransaction(walletId, walletId, amount, "Access denied: You can only credit your own wallets");
             throw new ValidationException("Access denied: You can only credit your own wallets");
@@ -254,14 +253,12 @@ public class WalletService {
             throw new ValidationException("Invalid passcode");
         }
 
-        
         Transaction pendingTransaction = createPendingTransaction(
                 walletId,
                 walletId,
                 amount,
                 "Credit transaction");
 
-        
         otpService.createAndSendOtp(
                 pendingTransaction.getId(),
                 currentUser.getId(),
@@ -274,7 +271,7 @@ public class WalletService {
     public UUID withdrawWallet(WithdrawalRequestDTO withdrawalRequestDTO) {
         UUID walletId = withdrawalRequestDTO.getWalletId();
         Double amount = withdrawalRequestDTO.getAmount();
-        
+
         if (amount == null || amount <= 0) {
             createFailedTransaction(walletId, walletId, amount, "Amount must be greater than 0");
             throw new ValidationException("Amount must be greater than 0");
@@ -307,14 +304,12 @@ public class WalletService {
             throw new ValidationException("Insufficient balance");
         }
 
-        
         Transaction pendingTransaction = createPendingTransaction(
                 walletId,
                 walletId,
                 amount,
                 "Withdrawal transaction");
 
-        
         otpService.createAndSendOtp(
                 pendingTransaction.getId(),
                 currentUser.getId(),
@@ -328,7 +323,7 @@ public class WalletService {
         UUID sourceWalletId = transferRequestDTO.getSourceWalletId();
         UUID destinationWalletId = transferRequestDTO.getDestinationWalletId();
         Double amount = transferRequestDTO.getAmount();
-        
+
         if (amount == null || amount <= 0) {
             createFailedTransaction(sourceWalletId, destinationWalletId, amount, "Amount must be greater than 0");
             throw new ValidationException("Amount must be greater than 0");
@@ -342,10 +337,6 @@ public class WalletService {
         Wallet sourceWallet = walletRepo.findById(sourceWalletId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Source wallet not found with id: " + sourceWalletId));
-
-        Wallet destinationWallet = walletRepo.findById(destinationWalletId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Destination wallet not found with id: " + destinationWalletId));
 
         User currentUser = securityUtil.getCurrentUser();
         if (currentUser == null) {
@@ -369,14 +360,12 @@ public class WalletService {
             throw new ValidationException("Insufficient balance");
         }
 
-        
         Transaction pendingTransaction = createPendingTransaction(
                 sourceWalletId,
                 destinationWalletId,
                 amount,
                 "Fund transfer");
 
-        
         otpService.createAndSendOtp(
                 pendingTransaction.getId(),
                 currentUser.getId(),
@@ -432,41 +421,12 @@ public class WalletService {
         return wallet;
     }
 
-    private void createSuccessfulTransaction(UUID senderWalletId, UUID receiverWalletId, Double amount,
-            String remarks) {
-        try {
-
-            Optional<Wallet> senderWalletOpt = walletRepo.findById(senderWalletId);
-            Optional<Wallet> receiverWalletOpt = walletRepo.findById(receiverWalletId);
-
-            if (senderWalletOpt.isPresent() && receiverWalletOpt.isPresent()) {
-                Wallet senderWallet = senderWalletOpt.get();
-                Wallet receiverWallet = receiverWalletOpt.get();
-
-                Transaction transaction = new Transaction();
-                transaction.setSenderWallet(senderWallet);
-                transaction.setReceiverWallet(receiverWallet);
-                transaction.setAmount(amount != null ? amount : 0.0);
-                transaction.setTransactionDate(LocalDateTime.now());
-                transaction.setStatus("success");
-                transaction.setRemarks(remarks != null ? remarks : "Transaction completed");
-
-                transactionRepo.save(transaction);
-            }
-        } catch (Exception e) {
-
-            System.err.println("Failed to create successful transaction record: " + e.getMessage());
-        }
-    }
-
     private void createFailedTransaction(UUID senderWalletId, UUID receiverWalletId, Double amount, String remarks) {
-
         TransactionTemplate newTransactionTemplate = new TransactionTemplate(transactionManager);
         newTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 
         newTransactionTemplate.executeWithoutResult(status -> {
             try {
-
                 Optional<Wallet> senderWalletOpt = walletRepo.findById(senderWalletId);
                 Optional<Wallet> receiverWalletOpt = walletRepo.findById(receiverWalletId);
 
@@ -484,16 +444,14 @@ public class WalletService {
                     transaction.setRemarks(remarks);
 
                     transactionRepo.save(transaction);
-                    transactionRepo.flush(); // Force immediate commit
+                    transactionRepo.flush();
                 }
             } catch (Exception e) {
-
                 System.err.println("Failed to create transaction record: " + e.getMessage());
             }
         });
     }
 
-    
     private Transaction createPendingTransaction(UUID senderWalletId, UUID receiverWalletId, Double amount, String remarks) {
         Optional<Wallet> senderWalletOpt = walletRepo.findById(senderWalletId);
         Optional<Wallet> receiverWalletOpt = walletRepo.findById(receiverWalletId);
@@ -513,7 +471,6 @@ public class WalletService {
         return transactionRepo.save(transaction);
     }
 
-    
     public void processTransactionAfterOtpVerification(UUID transactionId) {
         Transaction transaction = transactionRepo.findById(transactionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Transaction not found: " + transactionId));
@@ -527,16 +484,13 @@ public class WalletService {
         Double amount = transaction.getAmount();
         String remarks = transaction.getRemarks();
 
-       
         String transactionType = remarks != null ? remarks.toUpperCase() : "";
 
         try {
             if (transactionType.contains("CREDIT")) {
-                
                 senderWallet.setBalance(senderWallet.getBalance() + amount);
                 walletRepo.save(senderWallet);
             } else if (transactionType.contains("WITHDRAW")) {
-                
                 if (senderWallet.getBalance() < amount) {
                     transaction.setStatus("failed");
                     transaction.setRemarks("Insufficient balance");
@@ -546,7 +500,6 @@ public class WalletService {
                 senderWallet.setBalance(senderWallet.getBalance() - amount);
                 walletRepo.save(senderWallet);
             } else if (transactionType.contains("TRANSFER") || transactionType.contains("FUND")) {
-                
                 if (senderWallet.getBalance() < amount) {
                     transaction.setStatus("failed");
                     transaction.setRemarks("Insufficient balance");
@@ -559,12 +512,10 @@ public class WalletService {
                 walletRepo.save(receiverWallet);
             }
 
-            
             transaction.setStatus("success");
             transaction.setRemarks(remarks != null ? remarks : "Transaction completed");
             transactionRepo.save(transaction);
         } catch (Exception e) {
-            
             transaction.setStatus("failed");
             transaction.setRemarks("Transaction processing failed: " + e.getMessage());
             transactionRepo.save(transaction);
