@@ -79,7 +79,10 @@ public class TransactionController {
                 return PageRequest.of(page, size, sortObj);
             }
         }
-        return PageRequest.of(page, size);
+        
+        // Default sorting: transactionDate DESC
+        Sort defaultSort = Sort.by(Sort.Direction.DESC, "transactionDate");
+        return PageRequest.of(page, size, defaultSort);
     }
 
     @GetMapping("/transactions/statement")

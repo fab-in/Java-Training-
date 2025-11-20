@@ -16,16 +16,14 @@ public interface TransactionRepo extends JpaRepository<Transaction, UUID> {
            "LEFT JOIN FETCH sw.user su " +
            "LEFT JOIN FETCH t.receiverWallet rw " +
            "LEFT JOIN FETCH rw.user ru " +
-           "WHERE su.id = :userId OR ru.id = :userId " +
-           "ORDER BY t.transactionDate DESC")
+           "WHERE su.id = :userId OR ru.id = :userId")
     Page<Transaction> findByUserId(@Param("userId") UUID userId, Pageable pageable);
    
     @Query("SELECT DISTINCT t FROM Transaction t " +
            "LEFT JOIN FETCH t.senderWallet sw " +
            "LEFT JOIN FETCH sw.user su " +
            "LEFT JOIN FETCH t.receiverWallet rw " +
-           "LEFT JOIN FETCH rw.user ru " +
-           "ORDER BY t.transactionDate DESC")
+           "LEFT JOIN FETCH rw.user ru")
     Page<Transaction> findAllWithDetails(Pageable pageable);
    
     @Query("SELECT DISTINCT t FROM Transaction t " +
@@ -34,8 +32,7 @@ public interface TransactionRepo extends JpaRepository<Transaction, UUID> {
            "LEFT JOIN FETCH t.receiverWallet rw " +
            "LEFT JOIN FETCH rw.user ru " +
            "WHERE (su.id = :userId OR ru.id = :userId) " +
-           "AND t.remarks = :remark " +
-           "ORDER BY t.transactionDate DESC")
+           "AND t.remarks = :remark")
     Page<Transaction> findByUserIdAndRemark(@Param("userId") UUID userId, 
                                             @Param("remark") String remark, 
                                             Pageable pageable);
@@ -46,8 +43,7 @@ public interface TransactionRepo extends JpaRepository<Transaction, UUID> {
            "LEFT JOIN FETCH sw.user su " +
            "LEFT JOIN FETCH t.receiverWallet rw " +
            "LEFT JOIN FETCH rw.user ru " +
-           "WHERE t.remarks = :remark " +
-           "ORDER BY t.transactionDate DESC")
+           "WHERE t.remarks = :remark")
     Page<Transaction> findAllByRemark(@Param("remark") String remark, Pageable pageable);
     
    
@@ -57,8 +53,7 @@ public interface TransactionRepo extends JpaRepository<Transaction, UUID> {
            "LEFT JOIN FETCH t.receiverWallet rw " +
            "LEFT JOIN FETCH rw.user ru " +
            "WHERE (su.id = :userId OR ru.id = :userId) " +
-           "AND LOWER(t.status) = 'failed' " +
-           "ORDER BY t.transactionDate DESC")
+           "AND LOWER(t.status) = 'failed'")
     Page<Transaction> findFailedTransactionsByUserId(@Param("userId") UUID userId, Pageable pageable);
     
    
@@ -67,8 +62,7 @@ public interface TransactionRepo extends JpaRepository<Transaction, UUID> {
            "LEFT JOIN FETCH sw.user su " +
            "LEFT JOIN FETCH t.receiverWallet rw " +
            "LEFT JOIN FETCH rw.user ru " +
-           "WHERE LOWER(t.status) = 'failed' " +
-           "ORDER BY t.transactionDate DESC")
+           "WHERE LOWER(t.status) = 'failed'")
     Page<Transaction> findAllFailedTransactions(Pageable pageable);
     
     // Get all transactions for a user without pagination (for statement generation)

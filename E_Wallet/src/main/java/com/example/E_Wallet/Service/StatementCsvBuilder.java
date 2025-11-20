@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 public class StatementCsvBuilder {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     public byte[] buildStatementCsv(User user, List<Transaction> transactions, List<Wallet> userWallets) {
         StringBuilder csv = new StringBuilder();
 
@@ -32,7 +33,7 @@ public class StatementCsvBuilder {
             return csv.toString().getBytes(StandardCharsets.UTF_8);
         }
 
-        // Sort transactions chronologically (newest first for readability)
+        // Sort transactions by date descending
         List<Transaction> sortedTransactions = new ArrayList<>(transactions);
         sortedTransactions.sort(Comparator.comparing(Transaction::getTransactionDate));
         for (int i = sortedTransactions.size() - 1; i >= 0; i--) {
@@ -41,14 +42,14 @@ public class StatementCsvBuilder {
             boolean isSuccessful = "SUCCESS".equals(statusValue);
 
             csv.append(valueOrEmpty(transaction != null ? transaction.getId() : null)).append(",")
-               .append(formatDate(transaction != null ? transaction.getTransactionDate() : null)).append(",")
-               .append(isSuccessful ? formatAmount(transaction.getAmount()) : "")
-               .append(",")
-               .append(statusValue).append(",")
-               .append(escapeCsvField(transaction != null ? transaction.getRemarks() : "")).append(",")
-               .append(safeWalletReference(transaction != null ? transaction.getSenderWallet() : null)).append(",")
-               .append(safeWalletReference(transaction != null ? transaction.getReceiverWallet() : null))
-               .append("\n");
+                    .append(formatDate(transaction != null ? transaction.getTransactionDate() : null)).append(",")
+                    .append(isSuccessful ? formatAmount(transaction.getAmount()) : "")
+                    .append(",")
+                    .append(statusValue).append(",")
+                    .append(escapeCsvField(transaction != null ? transaction.getRemarks() : "")).append(",")
+                    .append(safeWalletReference(transaction != null ? transaction.getSenderWallet() : null)).append(",")
+                    .append(safeWalletReference(transaction != null ? transaction.getReceiverWallet() : null))
+                    .append("\n");
         }
 
         csv.append("\nFinal Balance,").append(formatAmount(calculateTotalBalance(userWallets))).append("\n");
@@ -131,4 +132,3 @@ public class StatementCsvBuilder {
         return field;
     }
 }
-
