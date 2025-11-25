@@ -32,7 +32,7 @@ public class OtpService {
     private PasswordEncoder passwordEncoder;
 
     private static final int OTP_LENGTH = 6;
-    private static final int OTP_EXPIRY_MINUTES = 10;
+    private static final int OTP_EXPIRY_MINUTES = 5;
     private static final int MAX_ATTEMPTS = 3;
 
     public String generateOtp() {
@@ -84,7 +84,8 @@ public class OtpService {
 
     public boolean verifyOtp(UUID transactionId, String enteredOtp) {
         Otp otp = otpRepo.findByTransactionIdAndIsVerifiedFalse(transactionId)
-                .orElseThrow(() -> new ResourceNotFoundException("OTP not found or already verified for transaction: " + transactionId));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "OTP not found or already verified for transaction: " + transactionId));
 
         // Check if OTP has expired
         if (LocalDateTime.now().isAfter(otp.getExpiresAt())) {
@@ -123,8 +124,7 @@ public class OtpService {
         otpRepo.saveAndFlush(otp);
         return newCount;
     }
-    
-    
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markOtpAsVerified(UUID transactionId) {
         Otp otp = otpRepo.findByTransactionIdAndIsVerifiedFalse(transactionId)
@@ -132,8 +132,7 @@ public class OtpService {
         otp.setIsVerified(true);
         otpRepo.saveAndFlush(otp);
     }
-    
-    
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markOtpAsExpired(UUID transactionId) {
         Otp otp = otpRepo.findByTransactionId(transactionId)
@@ -145,7 +144,7 @@ public class OtpService {
     private void markTransactionAsFailed(UUID transactionId, String remark) {
         Transaction transaction = transactionRepo.findById(transactionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Transaction not found: " + transactionId));
-        
+
         transaction.setStatus("failed");
         transaction.setRemarks(remark);
         transactionRepo.save(transaction);
@@ -163,15 +162,16 @@ public class OtpService {
 
     private String buildOtpEmailBody(String otpCode, String transactionType) {
         return "E-Wallet Transaction OTP\n\n" +
-               "Dear User,\n\n" +
-               "You have initiated a " + transactionType + " transaction on your E-Wallet account.\n\n" +
-               "Please use the following OTP to complete your transaction:\n\n" +
-               otpCode + "\n\n" +
-               "Important:\n" +
-               "- This OTP is valid for 10 minutes only\n" +
-               "- Do not share this OTP with anyone\n" +
-               "- You have 3 attempts to enter the correct OTP\n\n" +
-               "If you did not initiate this transaction, please ignore this email or contact support immediately.\n\n" +
-               "This is an automated email. Please do not reply.";
+                "Dear User,\n\n" +
+                "You have initiated a " + transactionType + " transaction on your E-Wallet account.\n\n" +
+                "Please use the following OTP to complete your transaction:\n\n" +
+                otpCode + "\n\n" +
+                "Important:\n" +
+                "- This OTP is valid for 10 minutes only\n" +
+                "- Do not share this OTP with anyone\n" +
+                "- You have 3 attempts to enter the correct OTP\n\n" +
+                "If you did not initiate this transaction, please ignore this email or contact support immediately.\n\n"
+                +
+                "This is an automated email. Please do not reply.";
     }
 }
