@@ -1,0 +1,78 @@
+package com.example.wallet_service.Service;
+
+import com.example.wallet_service.Config.RabbitMQConfig;
+import com.example.wallet_service.DTO.TransactionCompletedEvent;
+import com.example.wallet_service.DTO.TransactionCreatedEvent;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.UUID;
+
+/**
+ * Service for publishing RabbitMQ messages
+ * Publishes transaction events to queues
+ */
+@Service
+public class TransactionEventPublisher {
+    
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+    
+    /**
+     * Publishes transaction created event
+     * Called by Wallet Service when a transaction is initiated
+     */
+    public void publishTransactionCreated(
+            UUID transactionId,
+            UUID userId,
+            UUID senderWalletId,
+            UUID receiverWalletId,
+            Double amount,
+            String transactionType,
+            String remarks,
+            String userEmail) {
+        
+        TransactionCreatedEvent event = new TransactionCreatedEvent();
+        event.setTransactionId(transactionId);
+        event.setUserId(userId);
+        event.setSenderWalletId(senderWalletId);
+        event.setReceiverWalletId(receiverWalletId);
+        event.setAmount(amount);
+        event.setTransactionType(transactionType);
+        event.setRemarks(remarks);
+        event.setUserEmail(userEmail);
+        event.setTimestamp(System.currentTimeMillis());
+        
+        rabbitTemplate.convertAndSend(
+            RabbitMQConfig.TRANSACTION_CREATED_QUEUE,
+            event
+        );
+        
+        System.out.println("Published transaction.created event: " + transactionId);
+    }
+    
+    /**
+     * Publishes transaction completed event
+     * Called by Wallet Service after processing transaction
+     */
+    public void publishTransactionCompleted(
+            UUID transactionId,
+            String status,
+            String remarks) {
+        
+        TransactionCompletedEvent event = new TransactionCompletedEvent();
+        event.setTransactionId(transactionId);
+        event.setStatus(status);
+        event.setRemarks(remarks);
+        event.setTimestamp(System.currentTimeMillis());
+        
+        rabbitTemplate.convertAndSend(
+            RabbitMQConfig.TRANSACTION_COMPLETED_QUEUE,
+            event
+        );
+        
+        System.out.println("Published transaction.completed event: " + transactionId + " - " + status);
+    }
+}
+
