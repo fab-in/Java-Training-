@@ -8,20 +8,12 @@ import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
-/**
- * Service for publishing RabbitMQ messages
- * Publishes OTP verification events to Wallet Service
- */
 @Service
 public class TransactionEventPublisher {
-    
+
     @Autowired
     private RabbitTemplate rabbitTemplate;
-    
-    /**
-     * Publishes OTP verified event
-     * Called by Transaction Service when OTP is successfully verified
-     */
+
     public void publishOtpVerified(
             UUID transactionId,
             UUID userId,
@@ -29,7 +21,7 @@ public class TransactionEventPublisher {
             UUID receiverWalletId,
             Double amount,
             String transactionType) {
-        
+
         OtpVerifiedEvent event = new OtpVerifiedEvent();
         event.setTransactionId(transactionId);
         event.setUserId(userId);
@@ -38,13 +30,11 @@ public class TransactionEventPublisher {
         event.setAmount(amount);
         event.setTransactionType(transactionType);
         event.setTimestamp(System.currentTimeMillis());
-        
+
         rabbitTemplate.convertAndSend(
-            RabbitMQConfig.OTP_VERIFIED_QUEUE,
-            event
-        );
-        
+                RabbitMQConfig.OTP_VERIFIED_QUEUE,
+                event);
+
         System.out.println("Published otp.verified event: " + transactionId);
     }
 }
-

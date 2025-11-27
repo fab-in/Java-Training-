@@ -31,7 +31,7 @@ public class TransactionController {
     private OtpService otpService;
 
     // Default pagination values
-    private static final int DEFAULT_PAGE = 0;  // First page (0-indexed)
+    private static final int DEFAULT_PAGE = 0; // First page (0-indexed)
     private static final int DEFAULT_SIZE = 20; // 20 items per page
 
     @GetMapping("/transactions")
@@ -41,55 +41,48 @@ public class TransactionController {
             @RequestParam(name = "size", defaultValue = "20") int size,
             @RequestParam(name = "sort", required = false) String sort,
             @RequestParam(name = "order", required = false) String order) {
-        
-        
+
         Pageable pageable = createPageable(page, size, sort, order);
-        
-        
+
         PaginatedResponse<TransactionDTO> response = transactionService.getTransactions(type, pageable);
         return ResponseEntity.ok(response);
     }
 
     private Pageable createPageable(int page, int size, String sort, String order) {
-        
+
         if (page < 0) {
             page = DEFAULT_PAGE;
         }
-        
-        
+
         if (size < 1) {
             size = DEFAULT_SIZE;
         }
-        
-        
+
         if (order != null && !order.trim().isEmpty()) {
             Sort.Direction sortDirection = "oldest".equalsIgnoreCase(order.trim())
-                ? Sort.Direction.ASC
-                : Sort.Direction.DESC; // "newest" or default = DESC
-            
+                    ? Sort.Direction.ASC
+                    : Sort.Direction.DESC; // "newest" or default = DESC
+
             Sort sortObj = Sort.by(sortDirection, "transactionDate");
             return PageRequest.of(page, size, sortObj);
         }
-        
-        
+
         if (sort != null && !sort.trim().isEmpty()) {
-            
+
             String[] sortParts = sort.split(",");
             if (sortParts.length == 2) {
                 String field = sortParts[0].trim();
                 String direction = sortParts[1].trim().toLowerCase();
-                
-                
-                Sort.Direction sortDirection = "desc".equals(direction) 
-                    ? Sort.Direction.DESC 
-                    : Sort.Direction.ASC;
+
+                Sort.Direction sortDirection = "desc".equals(direction)
+                        ? Sort.Direction.DESC
+                        : Sort.Direction.ASC;
                 Sort sortObj = Sort.by(sortDirection, field);
-                
-                
+
                 return PageRequest.of(page, size, sortObj);
             }
         }
-        
+
         // Default sorting: transactionDate DESC
         Sort defaultSort = Sort.by(Sort.Direction.DESC, "transactionDate");
         return PageRequest.of(page, size, defaultSort);
@@ -99,7 +92,7 @@ public class TransactionController {
     public ResponseEntity<MessageResponseDTO> getStatement() {
         try {
             transactionService.generateAndEmailStatement();
-            
+
             MessageResponseDTO response = new MessageResponseDTO();
             response.setMessage("Transaction statement has been sent to your registered email address");
             return ResponseEntity.ok(response);
@@ -113,14 +106,12 @@ public class TransactionController {
     @PostMapping("/transactions/verify-otp")
     public ResponseEntity<Map<String, String>> verifyOtp(@Valid @RequestBody OtpVerificationDTO otpVerificationDTO) {
         try {
-            
+
             boolean isVerified = otpService.verifyOtp(
                     otpVerificationDTO.getTransactionId(),
                     otpVerificationDTO.getOtp());
 
             if (isVerified) {
-                // OTP verified - OtpService will publish RabbitMQ message
-                // Wallet Service will consume and process the transaction
                 Map<String, String> response = new HashMap<>();
                 response.put("message", "OTP verified successfully. Transaction is being processed.");
                 response.put("status", "success");
@@ -138,11 +129,10 @@ public class TransactionController {
                 return ResponseEntity.badRequest().body(response);
             }
         }
-        
+
         Map<String, String> response = new HashMap<>();
         response.put("message", "OTP verification failed");
         response.put("status", "failed");
         return ResponseEntity.badRequest().body(response);
     }
 }
-

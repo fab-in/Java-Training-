@@ -9,20 +9,12 @@ import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
-/**
- * Service for publishing RabbitMQ messages
- * Publishes transaction events to queues
- */
 @Service
 public class TransactionEventPublisher {
-    
+
     @Autowired
     private RabbitTemplate rabbitTemplate;
-    
-    /**
-     * Publishes transaction created event
-     * Called by Wallet Service when a transaction is initiated
-     */
+
     public void publishTransactionCreated(
             UUID transactionId,
             UUID userId,
@@ -32,7 +24,7 @@ public class TransactionEventPublisher {
             String transactionType,
             String remarks,
             String userEmail) {
-        
+
         TransactionCreatedEvent event = new TransactionCreatedEvent();
         event.setTransactionId(transactionId);
         event.setUserId(userId);
@@ -43,36 +35,29 @@ public class TransactionEventPublisher {
         event.setRemarks(remarks);
         event.setUserEmail(userEmail);
         event.setTimestamp(System.currentTimeMillis());
-        
+
         rabbitTemplate.convertAndSend(
-            RabbitMQConfig.TRANSACTION_CREATED_QUEUE,
-            event
-        );
-        
+                RabbitMQConfig.TRANSACTION_CREATED_QUEUE,
+                event);
+
         System.out.println("Published transaction.created event: " + transactionId);
     }
-    
-    /**
-     * Publishes transaction completed event
-     * Called by Wallet Service after processing transaction
-     */
+
     public void publishTransactionCompleted(
             UUID transactionId,
             String status,
             String remarks) {
-        
+
         TransactionCompletedEvent event = new TransactionCompletedEvent();
         event.setTransactionId(transactionId);
         event.setStatus(status);
         event.setRemarks(remarks);
         event.setTimestamp(System.currentTimeMillis());
-        
+
         rabbitTemplate.convertAndSend(
-            RabbitMQConfig.TRANSACTION_COMPLETED_QUEUE,
-            event
-        );
-        
+                RabbitMQConfig.TRANSACTION_COMPLETED_QUEUE,
+                event);
+
         System.out.println("Published transaction.completed event: " + transactionId + " - " + status);
     }
 }
-

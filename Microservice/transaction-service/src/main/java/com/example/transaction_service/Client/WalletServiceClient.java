@@ -9,10 +9,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import java.util.List;
 import java.util.UUID;
 
-/**
- * HTTP client for communicating with Wallet Service.
- * Uses Spring WebClient for reactive, non-blocking HTTP requests.
- */
 @Component
 public class WalletServiceClient {
 
@@ -24,14 +20,14 @@ public class WalletServiceClient {
                 .build();
     }
 
-    
     public List<WalletDTO> getUserWallets(UUID userId) {
         try {
             return webClient.get()
                     .uri("/wallets")
                     .header("X-User-Id", userId.toString()) // Pass user ID in header
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<List<WalletDTO>>() {})
+                    .bodyToMono(new ParameterizedTypeReference<List<WalletDTO>>() {
+                    })
                     .block();
         } catch (WebClientResponseException e) {
             System.err.println("HTTP Error getting user wallets: " + e.getStatusCode() + " - " + e.getMessage());
@@ -46,7 +42,6 @@ public class WalletServiceClient {
         }
     }
 
-    
     public static class WalletDTO {
         private UUID id;
         private UUID userId;
@@ -54,25 +49,54 @@ public class WalletServiceClient {
         private String accountNumber;
         private Double balance;
         private java.time.LocalDateTime createdAt;
-        
+
         // Getters and Setters
-        public UUID getId() { return id; }
-        public void setId(UUID id) { this.id = id; }
-        
-        public UUID getUserId() { return userId; }
-        public void setUserId(UUID userId) { this.userId = userId; }
-        
-        public String getWalletName() { return walletName; }
-        public void setWalletName(String walletName) { this.walletName = walletName; }
-        
-        public String getAccountNumber() { return accountNumber; }
-        public void setAccountNumber(String accountNumber) { this.accountNumber = accountNumber; }
-        
-        public Double getBalance() { return balance; }
-        public void setBalance(Double balance) { this.balance = balance; }
-        
-        public java.time.LocalDateTime getCreatedAt() { return createdAt; }
-        public void setCreatedAt(java.time.LocalDateTime createdAt) { this.createdAt = createdAt; }
+        public UUID getId() {
+            return id;
+        }
+
+        public void setId(UUID id) {
+            this.id = id;
+        }
+
+        public UUID getUserId() {
+            return userId;
+        }
+
+        public void setUserId(UUID userId) {
+            this.userId = userId;
+        }
+
+        public String getWalletName() {
+            return walletName;
+        }
+
+        public void setWalletName(String walletName) {
+            this.walletName = walletName;
+        }
+
+        public String getAccountNumber() {
+            return accountNumber;
+        }
+
+        public void setAccountNumber(String accountNumber) {
+            this.accountNumber = accountNumber;
+        }
+
+        public Double getBalance() {
+            return balance;
+        }
+
+        public void setBalance(Double balance) {
+            this.balance = balance;
+        }
+
+        public java.time.LocalDateTime getCreatedAt() {
+            return createdAt;
+        }
+
+        public void setCreatedAt(java.time.LocalDateTime createdAt) {
+            this.createdAt = createdAt;
+        }
     }
 }
-

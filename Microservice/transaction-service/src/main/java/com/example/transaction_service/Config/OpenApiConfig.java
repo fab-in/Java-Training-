@@ -11,13 +11,6 @@ import org.springdoc.core.customizers.OperationCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * OpenAPI Configuration for Swagger UI
- * 
- * This class configures the API documentation that appears in Swagger UI.
- * It provides metadata about your API (title, description, version) and
- * sets up JWT Bearer token authentication and custom headers for testing protected endpoints.
- */
 @Configuration
 public class OpenApiConfig {
 
@@ -58,7 +51,8 @@ public class OpenApiConfig {
                                                                 .name("X-User-Email")
                                                                 .description("User email - Required for some operations")
                                                                 .required(false)
-                                                                .schema(new Schema<>().type("string").format("email"))));
+                                                                .schema(new Schema<>().type("string")
+                                                                                .format("email"))));
         }
 
         /**
@@ -74,7 +68,7 @@ public class OpenApiConfig {
                                         .description("User ID (UUID) - Required for authentication")
                                         .required(true)
                                         .schema(new Schema<>().type("string").format("uuid")));
-                        
+
                         // Add X-User-Role header to all operations
                         operation.addParametersItem(new Parameter()
                                         .in("header")
@@ -82,7 +76,7 @@ public class OpenApiConfig {
                                         .description("User role (USER or ADMIN) - Required for authentication")
                                         .required(true)
                                         .schema(new Schema<>().type("string").example("USER")));
-                        
+
                         // Add X-User-Email header to all operations (optional)
                         operation.addParametersItem(new Parameter()
                                         .in("header")
@@ -90,9 +84,8 @@ public class OpenApiConfig {
                                         .description("User email - Required for some operations")
                                         .required(false)
                                         .schema(new Schema<>().type("string").format("email")));
-                        
+
                         return operation;
                 };
         }
 }
-
