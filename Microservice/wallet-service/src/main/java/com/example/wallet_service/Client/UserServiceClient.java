@@ -1,5 +1,7 @@
 package com.example.wallet_service.Client;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -9,6 +11,7 @@ import java.util.UUID;
 @Component
 public class UserServiceClient {
 
+    private static final Logger logger = LogManager.getLogger(UserServiceClient.class);
     private final WebClient webClient;
 
     public UserServiceClient(@Value("${user.service.url}") String userServiceUrl) {
@@ -30,12 +33,11 @@ public class UserServiceClient {
             return false;
         } catch (WebClientResponseException e) {
             // Other HTTP errors (5xx, etc.)
-            System.err.println("HTTP Error validating user: " + e.getStatusCode() + " - " + e.getMessage());
+            logger.warn("HTTP Error validating user: {} - {}", e.getStatusCode(), e.getMessage());
             return false;
         } catch (Exception e) {
             // Network errors, timeouts, etc.
-            System.err.println("Error validating user: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error validating user: {}", e.getMessage(), e);
             return false;
         }
     }
@@ -53,7 +55,7 @@ public class UserServiceClient {
             // User not found
             return null;
         } catch (Exception e) {
-            System.err.println("Error getting user email: " + e.getMessage());
+            logger.error("Error getting user email: {}", e.getMessage(), e);
             return null;
         }
     }
@@ -69,7 +71,7 @@ public class UserServiceClient {
         } catch (WebClientResponseException.NotFound e) {
             return null;
         } catch (Exception e) {
-            System.err.println("Error getting user details: " + e.getMessage());
+            logger.error("Error getting user details: {}", e.getMessage(), e);
             return null;
         }
     }

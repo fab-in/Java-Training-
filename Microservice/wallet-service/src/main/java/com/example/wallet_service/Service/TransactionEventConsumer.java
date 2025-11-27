@@ -6,6 +6,8 @@ import com.example.wallet_service.Exceptions.ResourceNotFoundException;
 import com.example.wallet_service.Exceptions.ValidationException;
 import com.example.wallet_service.Model.Wallet;
 import com.example.wallet_service.Repository.WalletRepo;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,8 @@ import java.util.UUID;
 @Service
 public class TransactionEventConsumer {
 
+    private static final Logger logger = LogManager.getLogger(TransactionEventConsumer.class);
+
     @Autowired
     private WalletRepo walletRepo;
 
@@ -25,7 +29,7 @@ public class TransactionEventConsumer {
     @RabbitListener(queues = RabbitMQConfig.OTP_VERIFIED_QUEUE)
     @Transactional
     public void handleOtpVerified(OtpVerifiedEvent event) {
-        System.out.println("Received OTP verified event for transaction: " + event.getTransactionId());
+        logger.info("Received OTP verified event for transaction: {}", event.getTransactionId());
 
         try {
             UUID transactionId = event.getTransactionId();
@@ -92,10 +96,10 @@ public class TransactionEventConsumer {
                         "Transfer transaction completed successfully");
             }
 
-            System.out.println("Transaction processed successfully: " + transactionId);
+            logger.info("Transaction processed successfully: {}", transactionId);
 
         } catch (Exception e) {
-            System.err.println("Error processing OTP verified event: " + e.getMessage());
+            logger.error("Error processing OTP verified event: {}", e.getMessage(), e);
             // Publish failure event
             transactionEventPublisher.publishTransactionCompleted(
                     event.getTransactionId(),

@@ -5,6 +5,8 @@ import com.example.transaction_service.DTO.TransactionCreatedEvent;
 import com.example.transaction_service.DTO.TransactionCompletedEvent;
 import com.example.transaction_service.Model.Transaction;
 import com.example.transaction_service.Repository.TransactionRepo;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,8 @@ import java.time.LocalDateTime;
 @Service
 public class TransactionEventConsumer {
 
+    private static final Logger logger = LogManager.getLogger(TransactionEventConsumer.class);
+
     @Autowired
     private TransactionRepo transactionRepo;
 
@@ -24,12 +28,12 @@ public class TransactionEventConsumer {
     @RabbitListener(queues = RabbitMQConfig.TRANSACTION_CREATED_QUEUE)
     @Transactional
     public void handleTransactionCreated(TransactionCreatedEvent event) {
-        System.out.println("Received transaction.created event: " + event.getTransactionId());
+        logger.info("Received transaction.created event: {}", event.getTransactionId());
 
         try {
 
             if (transactionRepo.existsById(event.getTransactionId())) {
-                System.out.println("Transaction already exists, skipping: " + event.getTransactionId());
+                logger.warn("Transaction already exists, skipping: {}", event.getTransactionId());
                 return;
             }
 
@@ -57,20 +61,19 @@ public class TransactionEventConsumer {
                     userEmail,
                     event.getTransactionType());
 
-            System.out.println("Transaction created and OTP sent: " + event.getTransactionId());
+            logger.info("Transaction created and OTP sent: {}", event.getTransactionId());
 
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            System.out.println("Transaction already exists (duplicate): " + event.getTransactionId());
+            logger.warn("Transaction already exists (duplicate): {}", event.getTransactionId());
         } catch (org.springframework.orm.ObjectOptimisticLockingFailureException e) {
-            System.out.println("Transaction was modified by another process: " + event.getTransactionId());
+            logger.warn("Transaction was modified by another process: {}", event.getTransactionId());
             if (transactionRepo.existsById(event.getTransactionId())) {
-                System.out.println("Transaction already processed, skipping: " + event.getTransactionId());
+                logger.info("Transaction already processed, skipping: {}", event.getTransactionId());
             } else {
                 throw new RuntimeException("Optimistic locking failure, will retry", e);
             }
         } catch (Exception e) {
-            System.err.println("Error processing transaction.created event: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error processing transaction.created event: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to process transaction event", e);
         }
     }
@@ -78,7 +81,7 @@ public class TransactionEventConsumer {
     @RabbitListener(queues = RabbitMQConfig.TRANSACTION_COMPLETED_QUEUE)
     @Transactional
     public void handleTransactionCompleted(TransactionCompletedEvent event) {
-        System.out.println("Received transaction.completed event: " + event.getTransactionId());
+        logger.info("Received transaction.completed event: {}", event.getTransactionId());
 
         try {
             Transaction transaction = transactionRepo.findById(event.getTransactionId())
@@ -90,11 +93,10 @@ public class TransactionEventConsumer {
 
             transactionRepo.save(transaction);
 
-            System.out.println("Transaction status updated: " + event.getTransactionId() + " - " + event.getStatus());
+            logger.info("Transaction status updated: {} - {}", event.getTransactionId(), event.getStatus());
 
         } catch (Exception e) {
-            System.err.println("Error processing transaction.completed event: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error processing transaction.completed event: {}", e.getMessage(), e);
         }
     }
 }

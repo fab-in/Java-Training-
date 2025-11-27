@@ -1,5 +1,7 @@
 package com.example.transaction_service.Client;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
@@ -12,6 +14,7 @@ import java.util.UUID;
 @Component
 public class WalletServiceClient {
 
+    private static final Logger logger = LogManager.getLogger(WalletServiceClient.class);
     private final WebClient webClient;
 
     public WalletServiceClient(@Value("${wallet.service.url}") String walletServiceUrl) {
@@ -30,14 +33,13 @@ public class WalletServiceClient {
                     })
                     .block();
         } catch (WebClientResponseException e) {
-            System.err.println("HTTP Error getting user wallets: " + e.getStatusCode() + " - " + e.getMessage());
+            logger.error("HTTP Error getting user wallets: {} - {}", e.getStatusCode(), e.getMessage());
             if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
                 return List.of();
             }
             return List.of();
         } catch (Exception e) {
-            System.err.println("Error getting user wallets: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error getting user wallets: {}", e.getMessage(), e);
             return List.of();
         }
     }

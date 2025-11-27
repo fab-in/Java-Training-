@@ -8,6 +8,8 @@ import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import jakarta.annotation.PostConstruct;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.KeyGenerator;
@@ -18,6 +20,8 @@ import java.util.UUID;
 
 @Component
 public class JwtUtil {
+
+    private static final Logger logger = LogManager.getLogger(JwtUtil.class);
 
     private SecretKey secretKey;
 
@@ -48,7 +52,7 @@ public class JwtUtil {
 
             this.secretKey = Keys.hmacShaKeyFor(finalKeyBytes);
 
-            System.out.println("JWT Secret Key generated successfully using KeyGenerator");
+            logger.info("JWT Secret Key generated successfully using KeyGenerator");
 
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Failed to initialize JWT secret key", e);
@@ -78,22 +82,22 @@ public class JwtUtil {
                     .parseSignedClaims(token);
             return true;
         } catch (ExpiredJwtException e) {
-            System.err.println("JWT token has expired: " + e.getMessage());
+            logger.warn("JWT token has expired: {}", e.getMessage());
             return false;
         } catch (MalformedJwtException e) {
-            System.err.println("Invalid JWT token format: " + e.getMessage());
+            logger.warn("Invalid JWT token format: {}", e.getMessage());
             return false;
         } catch (UnsupportedJwtException e) {
-            System.err.println("Unsupported JWT token: " + e.getMessage());
+            logger.warn("Unsupported JWT token: {}", e.getMessage());
             return false;
         } catch (SignatureException e) {
-            System.err.println("Invalid JWT signature: " + e.getMessage());
+            logger.warn("Invalid JWT signature: {}", e.getMessage());
             return false;
         } catch (IllegalArgumentException e) {
-            System.err.println("JWT token is null or empty: " + e.getMessage());
+            logger.warn("JWT token is null or empty: {}", e.getMessage());
             return false;
         } catch (Exception e) {
-            System.err.println("Error validating JWT token: " + e.getMessage());
+            logger.error("Error validating JWT token: {}", e.getMessage(), e);
             return false;
         }
     }

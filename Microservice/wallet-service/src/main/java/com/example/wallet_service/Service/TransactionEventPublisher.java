@@ -3,6 +3,8 @@ package com.example.wallet_service.Service;
 import com.example.wallet_service.Config.RabbitMQConfig;
 import com.example.wallet_service.DTO.TransactionCompletedEvent;
 import com.example.wallet_service.DTO.TransactionCreatedEvent;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -11,6 +13,8 @@ import java.util.UUID;
 
 @Service
 public class TransactionEventPublisher {
+
+    private static final Logger logger = LogManager.getLogger(TransactionEventPublisher.class);
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
@@ -40,7 +44,7 @@ public class TransactionEventPublisher {
                 RabbitMQConfig.TRANSACTION_CREATED_QUEUE,
                 event);
 
-        System.out.println("Published transaction.created event: " + transactionId);
+        logger.info("Published transaction.created event: {}", transactionId);
     }
 
     public void publishTransactionCompleted(
@@ -58,6 +62,6 @@ public class TransactionEventPublisher {
                 RabbitMQConfig.TRANSACTION_COMPLETED_QUEUE,
                 event);
 
-        System.out.println("Published transaction.completed event: " + transactionId + " - " + status);
+        logger.info("Published transaction.completed event: {} - {}", transactionId, status);
     }
 }

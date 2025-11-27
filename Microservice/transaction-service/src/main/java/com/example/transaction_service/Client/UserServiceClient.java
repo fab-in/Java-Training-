@@ -1,5 +1,7 @@
 package com.example.transaction_service.Client;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -9,6 +11,7 @@ import java.util.UUID;
 @Component
 public class UserServiceClient {
 
+    private static final Logger logger = LogManager.getLogger(UserServiceClient.class);
     private final WebClient webClient;
 
     public UserServiceClient(@Value("${user.service.url}") String userServiceUrl) {
@@ -25,17 +28,13 @@ public class UserServiceClient {
                     .bodyToMono(UserDTO.class)
                     .block();
         } catch (WebClientResponseException.NotFound e) {
-
-            System.err.println("User not found: " + userId);
+            logger.warn("User not found: {}", userId);
             return null;
         } catch (WebClientResponseException e) {
-
-            System.err.println("HTTP Error getting user details: " + e.getStatusCode() + " - " + e.getMessage());
+            logger.error("HTTP Error getting user details: {} - {}", e.getStatusCode(), e.getMessage());
             return null;
         } catch (Exception e) {
-
-            System.err.println("Error getting user details: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error getting user details: {}", e.getMessage(), e);
             return null;
         }
     }

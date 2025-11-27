@@ -1,5 +1,7 @@
 package com.example.transaction_service.Service;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,8 @@ import java.util.UUID;
 
 @Service
 public class OtpService {
+
+    private static final Logger logger = LogManager.getLogger(OtpService.class);
 
     @Autowired
     private OtpRepo otpRepo;
@@ -174,7 +178,7 @@ public class OtpService {
             String emailBody = buildOtpEmailBody(otpCode, transactionType);
             emailService.sendSimpleEmail(toEmail, subject, emailBody);
         } catch (Exception e) {
-            System.err.println("Failed to send OTP email: " + e.getMessage());
+            logger.error("Failed to send OTP email: {}", e.getMessage(), e);
         }
     }
 
