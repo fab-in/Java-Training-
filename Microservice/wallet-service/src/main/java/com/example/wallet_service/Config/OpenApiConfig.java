@@ -32,25 +32,21 @@ public class OpenApiConfig {
                                                 .addSecuritySchemes("bearer-jwt", new SecurityScheme()
                                                                 .type(SecurityScheme.Type.HTTP)
                                                                 .scheme("bearer")
-                                                                .bearerFormat("JWT")
-                                                                .description("Enter your JWT token obtained from User Service /auth/login endpoint"))
+                                                                .bearerFormat("JWT"))
                                                 // Add custom header parameters
                                                 .addParameters("X-User-Id", new Parameter()
                                                                 .in("header")
                                                                 .name("X-User-Id")
-                                                                .description("User ID (UUID) - Required for authentication")
                                                                 .required(true)
                                                                 .schema(new Schema<>().type("string").format("uuid")))
                                                 .addParameters("X-User-Role", new Parameter()
                                                                 .in("header")
                                                                 .name("X-User-Role")
-                                                                .description("User role (USER or ADMIN) - Required for authentication")
                                                                 .required(true)
                                                                 .schema(new Schema<>().type("string").example("USER")))
                                                 .addParameters("X-User-Email", new Parameter()
                                                                 .in("header")
                                                                 .name("X-User-Email")
-                                                                .description("User email - Required for some operations")
                                                                 .required(false)
                                                                 .schema(new Schema<>().type("string")
                                                                                 .format("email"))));
@@ -66,7 +62,6 @@ public class OpenApiConfig {
                         operation.addParametersItem(new Parameter()
                                         .in("header")
                                         .name("X-User-Id")
-                                        .description("User ID (UUID) - Required for authentication")
                                         .required(true)
                                         .schema(new Schema<>().type("string").format("uuid")));
 
@@ -74,7 +69,6 @@ public class OpenApiConfig {
                         operation.addParametersItem(new Parameter()
                                         .in("header")
                                         .name("X-User-Role")
-                                        .description("User role (USER or ADMIN) - Required for authentication")
                                         .required(true)
                                         .schema(new Schema<>().type("string").example("USER")));
 
@@ -82,7 +76,6 @@ public class OpenApiConfig {
                         operation.addParametersItem(new Parameter()
                                         .in("header")
                                         .name("X-User-Email")
-                                        .description("User email - Required for some operations")
                                         .required(false)
                                         .schema(new Schema<>().type("string").format("email")));
 
