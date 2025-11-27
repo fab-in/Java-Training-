@@ -17,7 +17,6 @@ import com.example.wallet_service.Exceptions.ResourceNotFoundException;
 import com.example.wallet_service.Exceptions.ValidationException;
 import com.example.wallet_service.Security.SecurityUtil;
 import com.example.wallet_service.Client.UserServiceClient;
-import com.example.wallet_service.Service.TransactionEventPublisher;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;

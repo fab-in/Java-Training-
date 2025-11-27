@@ -24,13 +24,7 @@ public class WalletServiceClient {
                 .build();
     }
 
-    /**
-     * Gets all wallets for a user via HTTP GET request
-     * Sends X-User-Id header so wallet service can filter wallets by user
-     * 
-     * @param userId The user ID to fetch wallets for
-     * @return List of WalletDTO, empty list if error occurs
-     */
+    
     public List<WalletDTO> getUserWallets(UUID userId) {
         try {
             return webClient.get()
@@ -40,25 +34,19 @@ public class WalletServiceClient {
                     .bodyToMono(new ParameterizedTypeReference<List<WalletDTO>>() {})
                     .block();
         } catch (WebClientResponseException e) {
-            // Handle HTTP errors (4xx, 5xx)
             System.err.println("HTTP Error getting user wallets: " + e.getStatusCode() + " - " + e.getMessage());
             if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-                // User has no wallets, return empty list
                 return List.of();
             }
             return List.of();
         } catch (Exception e) {
-            // Handle other errors (network, timeout, etc.)
             System.err.println("Error getting user wallets: " + e.getMessage());
             e.printStackTrace();
             return List.of();
         }
     }
 
-    /**
-     * DTO for wallet data received from Wallet Service
-     * Matches the WalletDTO structure from wallet-service
-     */
+    
     public static class WalletDTO {
         private UUID id;
         private UUID userId;

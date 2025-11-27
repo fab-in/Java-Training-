@@ -25,10 +25,7 @@ public class TransactionEventConsumer {
     @Autowired
     private OtpService otpService;
     
-    /**
-     * Consumes transaction created events from Wallet Service
-     * Creates transaction record and generates OTP
-     */
+    
     @RabbitListener(queues = RabbitMQConfig.TRANSACTION_CREATED_QUEUE)
     @Transactional
     public void handleTransactionCreated(TransactionCreatedEvent event) {
@@ -36,15 +33,14 @@ public class TransactionEventConsumer {
         
         try {
             // Check if transaction already exists (idempotency check)
-            // This prevents processing the same message multiple times
             if (transactionRepo.existsById(event.getTransactionId())) {
                 System.out.println("Transaction already exists, skipping: " + event.getTransactionId());
-                return; // Exit early - transaction already processed
+                return;
             }
             
             // Create transaction record
             Transaction transaction = new Transaction();
-            transaction.setId(event.getTransactionId()); // Set ID before save
+            transaction.setId(event.getTransactionId()); 
             transaction.setSenderWalletId(event.getSenderWalletId());
             transaction.setReceiverWalletId(event.getReceiverWalletId());
             transaction.setAmount(event.getAmount());
@@ -53,7 +49,7 @@ public class TransactionEventConsumer {
             transaction.setRemarks(event.getRemarks() != null ? event.getRemarks() : 
                 event.getTransactionType() + " transaction pending OTP verification");
             
-            // Use persist instead of save to avoid merge issues
+            
             transactionRepo.save(transaction);
             
             // Generate and send OTP
@@ -72,33 +68,21 @@ public class TransactionEventConsumer {
             System.out.println("Transaction created and OTP sent: " + event.getTransactionId());
             
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            // Transaction already exists (race condition or duplicate message)
             System.out.println("Transaction already exists (duplicate): " + event.getTransactionId());
-            // Don't throw exception - acknowledge message to prevent retry loop
         } catch (org.springframework.orm.ObjectOptimisticLockingFailureException e) {
-            // Transaction was updated by another process
             System.out.println("Transaction was modified by another process: " + event.getTransactionId());
-            // Check if it was already processed
             if (transactionRepo.existsById(event.getTransactionId())) {
                 System.out.println("Transaction already processed, skipping: " + event.getTransactionId());
-                // Don't throw - acknowledge message
             } else {
-                // Retry might help
                 throw new RuntimeException("Optimistic locking failure, will retry", e);
             }
         } catch (Exception e) {
             System.err.println("Error processing transaction.created event: " + e.getMessage());
             e.printStackTrace();
-            // Only throw if it's not a duplicate/race condition
-            // This allows RabbitMQ to retry, but idempotency check prevents infinite loop
             throw new RuntimeException("Failed to process transaction event", e);
         }
     }
-    
-    /**
-     * Consumes transaction completed events from Wallet Service
-     * Updates transaction status
-     */
+
     @RabbitListener(queues = RabbitMQConfig.TRANSACTION_COMPLETED_QUEUE)
     @Transactional
     public void handleTransactionCompleted(TransactionCompletedEvent event) {

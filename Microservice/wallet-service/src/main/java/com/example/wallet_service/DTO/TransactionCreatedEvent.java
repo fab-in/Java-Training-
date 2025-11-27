@@ -5,10 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.util.UUID;
 
-/**
- * Message DTO for Transaction Created Event
- * Published by Wallet Service when a transaction is initiated
- */
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

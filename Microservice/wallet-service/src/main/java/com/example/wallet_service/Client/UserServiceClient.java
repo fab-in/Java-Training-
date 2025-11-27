@@ -6,11 +6,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import java.util.UUID;
 
-/**
- * HTTP client for communicating with User Service.
- * Uses Spring WebClient for reactive, non-blocking HTTP requests.
- * This is used to validate users and fetch user information.
- */
 @Component
 public class UserServiceClient {
 
@@ -22,12 +17,6 @@ public class UserServiceClient {
                 .build();
     }
 
-    /**
-     * Validates if a user exists in User Service via HTTP GET request
-     * 
-     * @param userId The user ID to validate
-     * @return true if user exists, false otherwise
-     */
     public boolean validateUser(UUID userId) {
         try {
             UserDTO user = webClient.get()
@@ -51,12 +40,7 @@ public class UserServiceClient {
         }
     }
 
-    /**
-     * Gets user email by user ID via HTTP GET request
-     * 
-     * @param userId The user ID
-     * @return User email or null if not found or error occurs
-     */
+   
     public String getUserEmail(UUID userId) {
         try {
             UserDTO user = webClient.get()
@@ -74,12 +58,7 @@ public class UserServiceClient {
         }
     }
 
-    /**
-     * Gets full user details by user ID
-     * 
-     * @param userId The user ID
-     * @return UserDTO or null if not found
-     */
+    
     public UserDTO getUserDetails(UUID userId) {
         try {
             return webClient.get()
@@ -95,10 +74,7 @@ public class UserServiceClient {
         }
     }
 
-    /**
-     * DTO for user data received from User Service
-     * Matches the UserDTO structure from user-service
-     */
+    
     public static class UserDTO {
         private UUID id;
         private String name;

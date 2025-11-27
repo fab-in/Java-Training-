@@ -22,12 +22,6 @@ public class UserServiceClient {
                 .build();
     }
 
-    /**
-     * Gets user details by user ID via HTTP GET request
-     * 
-     * @param userId The user ID
-     * @return UserDTO or null if not found or error occurs
-     */
     public UserDTO getUserDetails(UUID userId) {
         try {
             return webClient.get()
@@ -36,25 +30,21 @@ public class UserServiceClient {
                     .bodyToMono(UserDTO.class)
                     .block();
         } catch (WebClientResponseException.NotFound e) {
-            // User not found
+            
             System.err.println("User not found: " + userId);
             return null;
         } catch (WebClientResponseException e) {
-            // Other HTTP errors (5xx, etc.)
+            
             System.err.println("HTTP Error getting user details: " + e.getStatusCode() + " - " + e.getMessage());
             return null;
         } catch (Exception e) {
-            // Network errors, timeouts, etc.
+            
             System.err.println("Error getting user details: " + e.getMessage());
             e.printStackTrace();
             return null;
         }
     }
 
-    /**
-     * DTO for user data received from User Service
-     * Matches the UserDTO structure from user-service
-     */
     public static class UserDTO {
         private UUID id;
         private String name;

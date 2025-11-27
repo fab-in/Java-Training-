@@ -5,11 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.util.UUID;
 
-/**
- * Message DTO for OTP Verified Event
- * Published by Transaction Service when OTP is verified
- * Consumed by Wallet Service to process the transaction
- */
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
