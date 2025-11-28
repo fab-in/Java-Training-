@@ -13,6 +13,8 @@ public class WalletDTO {
     private UUID id;
     private UUID userId;
     private String walletName;
+    private String accountNumber;
+    private Double balance;
     private LocalDateTime createdAt;
 }
 

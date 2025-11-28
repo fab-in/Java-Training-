@@ -436,6 +436,8 @@ public class WalletService {
         walletDTO.setId(wallet.getId());
         walletDTO.setUserId(wallet.getUserId());
         walletDTO.setWalletName(wallet.getWalletName());
+        walletDTO.setAccountNumber(wallet.getAccountNumber());
+        walletDTO.setBalance(wallet.getBalance());
         walletDTO.setCreatedAt(wallet.getCreatedAt());
         return walletDTO;
     }

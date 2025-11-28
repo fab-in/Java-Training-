@@ -1,0 +1,172 @@
+================================================================================
+                    MICROSERVICE WORKFLOW DIAGRAM
+================================================================================
+
+    ┌─────────────┐
+    │    USER     │
+    └──────┬──────┘
+       │
+       │ 1. HTTP Request (Credit/Withdraw/Transfer)
+       ▼
+┌─────────────────┐
+│  API GATEWAY    │
+└────────┬────────┘
+         │
+         │ Forward Request
+         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    WALLET SERVICE                               │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ 1. Validate Request (Wallet, Passcode, Balance)         │  │
+│  │ 2. Generate Transaction ID                               │  │
+│  │ 3. Publish TransactionCreatedEvent                        │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└───────────────────────┬─────────────────────────────────────────┘
+                        │
+                        │ PUBLISH
+                        ▼
+        ┌───────────────────────────────────────┐
+        │   QUEUE: transaction.created          │
+        │   Event: TransactionCreatedEvent       │
+        └───────────────────┬───────────────────┘
+                            │
+                            │ re
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                  TRANSACTION SERVICE                            │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ 1. Create Transaction Record (Status: PENDING)           │  │
+│  │ 2. Generate OTP (6-digit code)                           │  │
+│  │ 3. Send OTP via Email                                    │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└───────────────────────┬─────────────────────────────────────────┘
+                        │
+                        │ User verifies OTP via API
+                        │
+                        │ 2. Publish OtpVerifiedEvent
+                        ▼
+        ┌───────────────────────────────────────┐
+        │   QUEUE: otp.verified                  │
+        │   Event: OtpVerifiedEvent              │
+        └───────────────────┬───────────────────┘
+                            │
+                            │ CONSUME
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    WALLET SERVICE                               │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Process Transaction Based on Type:                        │  │
+│  │                                                           │  │
+│  │ CREDIT:   senderWallet.balance += amount                 │  │
+│  │ WITHDRAW: senderWallet.balance -= amount                 │  │
+│  │ TRANSFER: senderWallet.balance -= amount                 │  │
+│  │           receiverWallet.balance += amount               │  │
+│  │                                                           │  │
+│  │ 3. Publish TransactionCompletedEvent                     │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└───────────────────────┬─────────────────────────────────────────┘
+                        │
+                        │ PUBLISH
+                        ▼
+        ┌───────────────────────────────────────┐
+        │   QUEUE: transaction.completed        │
+        │   Event: TransactionCompletedEvent     │
+        └───────────────────┬───────────────────┘
+                            │
+                            │ CONSUME
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                  TRANSACTION SERVICE                            │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Update Transaction Status (SUCCESS or FAILED)            │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+                          QUEUE SUMMARY
+================================================================================
+
+┌─────────────────────────┬──────────────────┬──────────────────────┬────────────────────┐
+│ Queue Name              │ Publisher        │ Consumer             │ When Published     │
+├─────────────────────────┼──────────────────┼──────────────────────┼────────────────────┤
+│ transaction.created     │ Wallet Service   │ Transaction Service  │ User initiates     │
+│                         │                  │                      │ Credit/Withdraw/    │
+│                         │                  │                      │ Transfer           │
+├─────────────────────────┼──────────────────┼──────────────────────┼────────────────────┤
+│ otp.verified            │ Transaction      │ Wallet Service       │ User successfully   │
+│                         │ Service          │                      │ verifies OTP       │
+├─────────────────────────┼──────────────────┼──────────────────────┼────────────────────┤
+│ transaction.completed   │ Wallet Service   │ Transaction Service  │ Wallet balances    │
+│                         │                  │                      │ updated            │
+└─────────────────────────┴──────────────────┴──────────────────────┴────────────────────┘
+
+
+================================================================================
+                      EVENT DETAILS
+================================================================================
+
+1. TransactionCreatedEvent (Published to: transaction.created)
+   ├─ transactionId (UUID)
+   ├─ userId (UUID)
+   ├─ senderWalletId (UUID)
+   ├─ receiverWalletId (UUID)
+   ├─ amount (Double)
+   ├─ transactionType (CREDIT/WITHDRAW/TRANSFER)
+   ├─ remarks (String)
+   ├─ userEmail (String)
+   └─ timestamp (Long)
+
+2. OtpVerifiedEvent (Published to: otp.verified)
+   ├─ transactionId (UUID)
+   ├─ userId (UUID)
+   ├─ senderWalletId (UUID)
+   ├─ receiverWalletId (UUID)
+   ├─ amount (Double)
+   ├─ transactionType (CREDIT/WITHDRAW/TRANSFER)
+   └─ timestamp (Long)
+
+3. TransactionCompletedEvent (Published to: transaction.completed)
+   ├─ transactionId (UUID)
+   ├─ status (SUCCESS/FAILED)
+   ├─ remarks (String)
+   └─ timestamp (Long)
+
+
+================================================================================
+                      TRANSACTION TYPES
+================================================================================
+
+CREDIT:
+  └─ senderWallet.balance += amount
+     (sender and receiver are same wallet)
+
+WITHDRAW:
+  └─ senderWallet.balance -= amount
+     (sender and receiver are same wallet)
+
+TRANSFER:
+  ├─ senderWallet.balance -= amount
+  └─ receiverWallet.balance += amount
+     (different wallets)
+
+
+================================================================================
+                      ERROR SCENARIOS
+================================================================================
+
+1. OTP Expired
+   └─ Transaction marked as FAILED
+      └─ No OtpVerifiedEvent published
+         └─ Wallet balances unchanged
+
+2. Insufficient Balance (During Wallet Update)
+   └─ TransactionCompletedEvent published with status FAILED
+      └─ Transaction status updated to FAILED
+         └─ No balance changes
+
+3. Invalid OTP (Max Attempts Reached)
+   └─ Transaction marked as FAILED
+      └─ No OtpVerifiedEvent published
+         └─ Wallet balances unchanged
+
