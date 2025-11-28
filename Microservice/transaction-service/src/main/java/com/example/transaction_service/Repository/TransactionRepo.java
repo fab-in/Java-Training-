@@ -31,17 +31,17 @@ public interface TransactionRepo extends JpaRepository<Transaction, UUID> {
      */
     @Query("SELECT t FROM Transaction t " +
            "WHERE (t.senderWalletId IN :walletIds OR t.receiverWalletId IN :walletIds) " +
-           "AND t.remarks = :remark " +
+           "AND LOWER(COALESCE(t.remarks, '')) LIKE LOWER(CONCAT('%', :remark, '%')) " +
            "ORDER BY t.transactionDate DESC")
-    Page<Transaction> findByWalletIdsAndRemark(@Param("walletIds") List<UUID> walletIds, 
-                                                @Param("remark") String remark, 
-                                                Pageable pageable);
+    Page<Transaction> findByWalletIdsAndRemarkContaining(@Param("walletIds") List<UUID> walletIds, 
+                                                         @Param("remark") String remark, 
+                                                         Pageable pageable);
     
     /**
      * Find all transactions by remark (for admin)
      */
-    @Query("SELECT t FROM Transaction t WHERE t.remarks = :remark ORDER BY t.transactionDate DESC")
-    Page<Transaction> findAllByRemark(@Param("remark") String remark, Pageable pageable);
+    @Query("SELECT t FROM Transaction t WHERE LOWER(COALESCE(t.remarks, '')) LIKE LOWER(CONCAT('%', :remark, '%')) ORDER BY t.transactionDate DESC")
+    Page<Transaction> findAllByRemarkContaining(@Param("remark") String remark, Pageable pageable);
     
     /**
      * Find failed transactions where user's wallet is sender or receiver

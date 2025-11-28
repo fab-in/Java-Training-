@@ -54,15 +54,15 @@ public class TransactionService {
         Page<Transaction> transactionPage;
         switch (normalizedType) {
             case "credits":
-                transactionPage = filterTransactionsByRemark("Credit transaction", validatedPageable);
+                transactionPage = filterTransactionsByRemarkContains("credit transaction", validatedPageable);
                 break;
                 
             case "withdrawals":
-                transactionPage = filterTransactionsByRemark("Withdrawal transaction", validatedPageable);
+                transactionPage = filterTransactionsByRemarkContains("withdrawal transaction", validatedPageable);
                 break;
                 
             case "transfers":
-                transactionPage = filterTransactionsByRemark("Fund transfer", validatedPageable);
+                transactionPage = filterTransactionsByRemarkContains("transfer", validatedPageable);
                 break;
                 
             case "failed":
@@ -78,7 +78,7 @@ public class TransactionService {
         return convertToPaginatedResponse(transactionPage);
     }
 
-    private Page<Transaction> filterTransactionsByRemark(String remark, Pageable pageable) {
+    private Page<Transaction> filterTransactionsByRemarkContains(String remark, Pageable pageable) {
         UUID currentUserId = securityUtil.getCurrentUserId();
 
         if (currentUserId == null) {
@@ -86,11 +86,11 @@ public class TransactionService {
         }
 
         if (securityUtil.isAdmin()) {
-            return transactionRepo.findAllByRemark(remark, pageable);
+            return transactionRepo.findAllByRemarkContaining(remark, pageable);
         } else {
             // Get wallet IDs for the user
             List<UUID> walletIds = getWalletIdsForUser(currentUserId);
-            return transactionRepo.findByWalletIdsAndRemark(walletIds, remark, pageable);
+            return transactionRepo.findByWalletIdsAndRemarkContaining(walletIds, remark, pageable);
         }
     }
     
