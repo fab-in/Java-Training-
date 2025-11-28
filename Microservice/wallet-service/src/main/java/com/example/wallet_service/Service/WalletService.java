@@ -12,6 +12,7 @@ import com.example.wallet_service.DTO.WalletUpdateDTO;
 import com.example.wallet_service.DTO.CreditRequestDTO;
 import com.example.wallet_service.DTO.WithdrawalRequestDTO;
 import com.example.wallet_service.DTO.TransferRequestDTO;
+import com.example.wallet_service.DTO.WalletSummaryDTO;
 import com.example.wallet_service.Exceptions.DuplicateResourceException;
 import com.example.wallet_service.Exceptions.ResourceNotFoundException;
 import com.example.wallet_service.Exceptions.ValidationException;
@@ -44,7 +45,7 @@ public class WalletService {
     /**
      * Get all wallets for the current user, or all wallets if admin
      */
-    public List<WalletDTO> getWallets() {
+    public List<WalletSummaryDTO> getWallets() {
         UUID currentUserId = securityUtil.getCurrentUserId();
 
         if (currentUserId == null) {
@@ -60,7 +61,7 @@ public class WalletService {
         }
 
         return wallets.stream()
-                .map(this::convertToDTO)
+                .map(this::convertToSummaryDTO)
                 .collect(Collectors.toList());
     }
 
@@ -440,6 +441,19 @@ public class WalletService {
         walletDTO.setBalance(wallet.getBalance());
         walletDTO.setCreatedAt(wallet.getCreatedAt());
         return walletDTO;
+    }
+
+    /**
+     * Convert Wallet entity to summary DTO (no balance)
+     */
+    private WalletSummaryDTO convertToSummaryDTO(Wallet wallet) {
+        WalletSummaryDTO summaryDTO = new WalletSummaryDTO();
+        summaryDTO.setId(wallet.getId());
+        summaryDTO.setUserId(wallet.getUserId());
+        summaryDTO.setWalletName(wallet.getWalletName());
+        summaryDTO.setAccountNumber(wallet.getAccountNumber());
+        summaryDTO.setCreatedAt(wallet.getCreatedAt());
+        return summaryDTO;
     }
 
     /**

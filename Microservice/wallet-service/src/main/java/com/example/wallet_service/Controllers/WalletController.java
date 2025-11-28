@@ -18,6 +18,7 @@ import com.example.wallet_service.DTO.WalletUpdateDTO;
 import com.example.wallet_service.DTO.CreditRequestDTO;
 import com.example.wallet_service.DTO.WithdrawalRequestDTO;
 import com.example.wallet_service.DTO.TransferRequestDTO;
+import com.example.wallet_service.DTO.WalletSummaryDTO;
 import jakarta.validation.Valid;
 import java.util.HashMap;
 import java.util.List;
@@ -31,8 +32,8 @@ public class WalletController {
     private WalletService walletService;
 
     @GetMapping("/wallets")
-    public ResponseEntity<List<WalletDTO>> getWallets() {
-        List<WalletDTO> wallets = walletService.getWallets();
+    public ResponseEntity<List<WalletSummaryDTO>> getWallets() {
+        List<WalletSummaryDTO> wallets = walletService.getWallets();
         return ResponseEntity.ok(wallets);
     }
 
