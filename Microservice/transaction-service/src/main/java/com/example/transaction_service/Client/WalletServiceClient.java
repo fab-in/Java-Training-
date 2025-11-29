@@ -26,7 +26,7 @@ public class WalletServiceClient {
     public List<WalletDTO> getUserWallets(UUID userId) {
         try {
             return webClient.get()
-                    .uri("/wallets")
+                    .uri("/wallets/with-balance")
                     .header("X-User-Id", userId.toString()) // Pass user ID in header
                     .retrieve()
                     .bodyToMono(new ParameterizedTypeReference<List<WalletDTO>>() {

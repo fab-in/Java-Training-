@@ -29,11 +29,6 @@ public class StatementCsvBuilder {
         // CSV Header
         csv.append("Transaction ID,Date,Amount,Status,Remarks,Sender Wallet ID,Receiver Wallet ID\n");
 
-        if (transactions.isEmpty()) {
-            csv.append("\nFinal Balance,").append(formatAmount(calculateTotalBalance(userWallets))).append("\n");
-            return csv.toString().getBytes(StandardCharsets.UTF_8);
-        }
-
         // Sort transactions by date descending
         List<Transaction> sortedTransactions = new ArrayList<>(transactions);
         sortedTransactions.sort(Comparator.comparing(Transaction::getTransactionDate));
@@ -53,7 +48,6 @@ public class StatementCsvBuilder {
                     .append("\n");
         }
 
-        csv.append("\nFinal Balance,").append(formatAmount(calculateTotalBalance(userWallets))).append("\n");
         return csv.toString().getBytes(StandardCharsets.UTF_8);
     }
 
@@ -103,16 +97,6 @@ public class StatementCsvBuilder {
             return "FAILED";
         }
         return upper;
-    }
-
-    private double calculateTotalBalance(List<WalletServiceClient.WalletDTO> wallets) {
-        if (wallets == null) {
-            return 0.0;
-        }
-        return wallets.stream()
-                .filter(wallet -> wallet != null && wallet.getBalance() != null)
-                .mapToDouble(WalletServiceClient.WalletDTO::getBalance)
-                .sum();
     }
 
     private String escapeCsvField(String field) {

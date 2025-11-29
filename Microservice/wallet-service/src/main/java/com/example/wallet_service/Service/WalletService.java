@@ -66,6 +66,30 @@ public class WalletService {
     }
 
     /**
+     * Get all wallets with balance for the current user, or all wallets if admin
+     * Used for internal services like statement generation
+     */
+    public List<WalletDTO> getWalletsWithBalance() {
+        UUID currentUserId = securityUtil.getCurrentUserId();
+
+        if (currentUserId == null) {
+            throw new ValidationException("User not authenticated");
+        }
+
+        List<Wallet> wallets;
+
+        if (securityUtil.isAdmin()) {
+            wallets = walletRepo.findAll();
+        } else {
+            wallets = walletRepo.findByUserId(currentUserId);
+        }
+
+        return wallets.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Get wallet by ID
      */
     public WalletDTO getWalletById(UUID id) {

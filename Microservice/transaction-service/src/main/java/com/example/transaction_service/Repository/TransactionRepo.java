@@ -10,59 +10,36 @@ import java.util.List;
 import java.util.UUID;
 
 public interface TransactionRepo extends JpaRepository<Transaction, UUID> {
-    
-    /**
-     * Find transactions where user's wallet is sender or receiver.
-     * Note: This requires wallet IDs to be passed in, not user ID directly.
-     * The service layer will need to fetch wallet IDs from Wallet Service first.
-     */
-    @Query("SELECT t FROM Transaction t " +
-           "WHERE t.senderWalletId IN :walletIds OR t.receiverWalletId IN :walletIds " +
-           "ORDER BY t.transactionDate DESC")
-    Page<Transaction> findByWalletIds(@Param("walletIds") List<UUID> walletIds, Pageable pageable);
-    
-    /**
-     * Find all transactions (for admin)
-     */
-    Page<Transaction> findAll(Pageable pageable);
-    
-    /**
-     * Find transactions by remark where user's wallet is sender or receiver
-     */
-    @Query("SELECT t FROM Transaction t " +
-           "WHERE (t.senderWalletId IN :walletIds OR t.receiverWalletId IN :walletIds) " +
-           "AND LOWER(COALESCE(t.remarks, '')) LIKE LOWER(CONCAT('%', :remark, '%')) " +
-           "ORDER BY t.transactionDate DESC")
-    Page<Transaction> findByWalletIdsAndRemarkContaining(@Param("walletIds") List<UUID> walletIds, 
-                                                         @Param("remark") String remark, 
-                                                         Pageable pageable);
-    
-    /**
-     * Find all transactions by remark (for admin)
-     */
-    @Query("SELECT t FROM Transaction t WHERE LOWER(COALESCE(t.remarks, '')) LIKE LOWER(CONCAT('%', :remark, '%')) ORDER BY t.transactionDate DESC")
-    Page<Transaction> findAllByRemarkContaining(@Param("remark") String remark, Pageable pageable);
-    
-    /**
-     * Find failed transactions where user's wallet is sender or receiver
-     */
-    @Query("SELECT t FROM Transaction t " +
-           "WHERE (t.senderWalletId IN :walletIds OR t.receiverWalletId IN :walletIds) " +
-           "AND LOWER(t.status) = 'failed' " +
-           "ORDER BY t.transactionDate DESC")
-    Page<Transaction> findFailedTransactionsByWalletIds(@Param("walletIds") List<UUID> walletIds, Pageable pageable);
-    
-    /**
-     * Find all failed transactions (for admin)
-     */
-    @Query("SELECT t FROM Transaction t WHERE LOWER(t.status) = 'failed' ORDER BY t.transactionDate DESC")
-    Page<Transaction> findAllFailedTransactions(Pageable pageable);
-    
-    /**
-     * Get all transactions for wallets (without pagination, for statement generation)
-     */
-    @Query("SELECT t FROM Transaction t " +
-           "WHERE t.senderWalletId IN :walletIds OR t.receiverWalletId IN :walletIds " +
-           "ORDER BY t.transactionDate DESC")
-    List<Transaction> findAllByWalletIds(@Param("walletIds") List<UUID> walletIds);
+
+       @Query("SELECT t FROM Transaction t " +
+                     "WHERE t.senderWalletId IN :walletIds OR t.receiverWalletId IN :walletIds " +
+                     "ORDER BY t.transactionDate DESC")
+       Page<Transaction> findByWalletIds(@Param("walletIds") List<UUID> walletIds, Pageable pageable);
+
+       Page<Transaction> findAll(Pageable pageable);
+
+       @Query("SELECT t FROM Transaction t " +
+                     "WHERE (t.senderWalletId IN :walletIds OR t.receiverWalletId IN :walletIds) " +
+                     "AND LOWER(COALESCE(t.remarks, '')) LIKE LOWER(CONCAT('%', :remark, '%')) " +
+                     "ORDER BY t.transactionDate DESC")
+       Page<Transaction> findByWalletIdsAndRemarkContaining(@Param("walletIds") List<UUID> walletIds,
+                     @Param("remark") String remark,
+                     Pageable pageable);
+
+       @Query("SELECT t FROM Transaction t WHERE LOWER(COALESCE(t.remarks, '')) LIKE LOWER(CONCAT('%', :remark, '%')) ORDER BY t.transactionDate DESC")
+       Page<Transaction> findAllByRemarkContaining(@Param("remark") String remark, Pageable pageable);
+
+       @Query("SELECT t FROM Transaction t " +
+                     "WHERE (t.senderWalletId IN :walletIds OR t.receiverWalletId IN :walletIds) " +
+                     "AND LOWER(t.status) = 'failed' " +
+                     "ORDER BY t.transactionDate DESC")
+       Page<Transaction> findFailedTransactionsByWalletIds(@Param("walletIds") List<UUID> walletIds, Pageable pageable);
+
+       @Query("SELECT t FROM Transaction t WHERE LOWER(t.status) = 'failed' ORDER BY t.transactionDate DESC")
+       Page<Transaction> findAllFailedTransactions(Pageable pageable);
+
+       @Query("SELECT t FROM Transaction t " +
+                     "WHERE t.senderWalletId IN :walletIds OR t.receiverWalletId IN :walletIds " +
+                     "ORDER BY t.transactionDate DESC")
+       List<Transaction> findAllByWalletIds(@Param("walletIds") List<UUID> walletIds);
 }

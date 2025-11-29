@@ -16,7 +16,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQConfig {
 
-    // Queue names - must match Wallet Service
     public static final String TRANSACTION_CREATED_QUEUE = "transaction.created";
     public static final String OTP_VERIFIED_QUEUE = "otp.verified";
     public static final String TRANSACTION_COMPLETED_QUEUE = "transaction.completed";
@@ -43,10 +42,8 @@ public class RabbitMQConfig {
         DefaultClassMapper classMapper = new DefaultClassMapper() {
             @Override
             public Class<?> toClass(MessageProperties properties) {
-                // Get the type ID from message properties
                 String typeId = (String) properties.getHeaders().get("__TypeId__");
 
-                // Map wallet-service DTOs to transaction-service DTOs
                 if (typeId != null) {
                     if (typeId.equals("com.example.wallet_service.DTO.TransactionCreatedEvent")) {
                         return TransactionCreatedEvent.class;

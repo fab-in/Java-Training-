@@ -37,6 +37,12 @@ public class WalletController {
         return ResponseEntity.ok(wallets);
     }
 
+    @GetMapping("/wallets/with-balance")
+    public ResponseEntity<List<WalletDTO>> getWalletsWithBalance() {
+        List<WalletDTO> wallets = walletService.getWalletsWithBalance();
+        return ResponseEntity.ok(wallets);
+    }
+
     @GetMapping("/wallets/{id}")
     public ResponseEntity<WalletDTO> getWalletById(@PathVariable UUID id) {
         WalletDTO walletDTO = walletService.getWalletById(id);
