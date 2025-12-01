@@ -9,13 +9,6 @@ import io.swagger.v3.oas.models.Components;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * OpenAPI Configuration for Swagger UI
- * 
- * This class configures the API documentation that appears in Swagger UI.
- * It provides metadata about your API (title, description, version) and
- * sets up JWT Bearer token authentication for testing protected endpoints.
- */
 @Configuration
 public class OpenApiConfig {
 

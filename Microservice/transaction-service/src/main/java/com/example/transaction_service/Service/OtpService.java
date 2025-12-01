@@ -5,16 +5,12 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.annotation.Propagation;
-import com.example.transaction_service.Model.Otp;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.example.transaction_service.DTO.OtpData;
 import com.example.transaction_service.Model.Transaction;
-import com.example.transaction_service.Repository.OtpRepo;
 import com.example.transaction_service.Repository.TransactionRepo;
 import com.example.transaction_service.Exceptions.ResourceNotFoundException;
 import com.example.transaction_service.Exceptions.ValidationException;
-import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 
@@ -24,7 +20,7 @@ public class OtpService {
     private static final Logger logger = LogManager.getLogger(OtpService.class);
 
     @Autowired
-    private OtpRepo otpRepo;
+    private Cache<UUID, OtpData> otpCache;
 
     @Autowired
     private TransactionRepo transactionRepo;
@@ -39,7 +35,6 @@ public class OtpService {
     private TransactionEventPublisher transactionEventPublisher;
 
     private static final int OTP_LENGTH = 6;
-    private static final int OTP_EXPIRY_MINUTES = 5;
     private static final int MAX_ATTEMPTS = 3;
 
     public String generateOtp() {
@@ -51,123 +46,80 @@ public class OtpService {
         return otp.toString();
     }
 
-    public Otp createAndSendOtp(UUID transactionId, UUID userId, String userEmail, String transactionType) {
-        Optional<Otp> existingOtp = otpRepo.findByTransactionId(transactionId);
-        if (existingOtp.isPresent() && !existingOtp.get().getIsVerified()) {
-            Otp otp = existingOtp.get();
-            String newOtpCode = generateOtp();
-
-            String hashedOtp = passwordEncoder.encode(newOtpCode);
-            otp.setOtpCode(hashedOtp);
-            otp.setCreatedAt(LocalDateTime.now());
-            otp.setExpiresAt(LocalDateTime.now().plusMinutes(OTP_EXPIRY_MINUTES));
-            otp.setAttemptCount(0);
-            otp.setIsExpired(false);
-            otp = otpRepo.save(otp);
-            sendOtpEmail(userEmail, newOtpCode, transactionType);
-            return otp;
-        }
-
+    public void createAndSendOtp(UUID transactionId, UUID userId, String userEmail, String transactionType) {
         String otpCode = generateOtp();
-        LocalDateTime now = LocalDateTime.now();
         String hashedOtp = passwordEncoder.encode(otpCode);
 
-        Otp otp = new Otp();
-        otp.setTransactionId(transactionId);
-        otp.setUserId(userId);
-        otp.setOtpCode(hashedOtp);
-        otp.setUserEmail(userEmail);
-        otp.setTransactionType(transactionType);
-        otp.setCreatedAt(now);
-        otp.setExpiresAt(now.plusMinutes(OTP_EXPIRY_MINUTES));
-        otp.setAttemptCount(0);
-        otp.setIsVerified(false);
-        otp.setIsExpired(false);
+        OtpData otpData = new OtpData();
+        otpData.setTransactionId(transactionId);
+        otpData.setHashedOtpCode(hashedOtp);
+        otpData.setUserId(userId);
+        otpData.setUserEmail(userEmail);
+        otpData.setTransactionType(transactionType);
+        otpData.setAttemptCount(0);
+        otpData.setIsVerified(false);
 
-        otp = otpRepo.save(otp);
+        otpCache.put(transactionId, otpData);
+        
         sendOtpEmail(userEmail, otpCode, transactionType);
-        return otp;
+        logger.info("OTP generated and stored in cache for transaction: {}", transactionId);
     }
 
     public boolean verifyOtp(UUID transactionId, String enteredOtp) {
-        Otp otp = otpRepo.findByTransactionIdAndIsVerifiedFalse(transactionId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "OTP not found or already verified for transaction: " + transactionId));
-
-        // Check if OTP has expired
-        if (LocalDateTime.now().isAfter(otp.getExpiresAt())) {
-            markOtpAsExpired(transactionId);
-            markTransactionAsFailed(transactionId, "OTP expired");
-            throw new ValidationException("OTP has expired. Please initiate a new transaction.");
+        OtpData otpData = otpCache.getIfPresent(transactionId);
+        
+        if (otpData == null) {
+            throw new ResourceNotFoundException(
+                    "OTP not found or expired for transaction: " + transactionId);
         }
 
-        if (otp.getAttemptCount() >= MAX_ATTEMPTS) {
+        if (otpData.getIsVerified()) {
+            throw new ValidationException("OTP has already been verified for this transaction.");
+        }
+
+        if (otpData.getAttemptCount() >= MAX_ATTEMPTS) {
             markTransactionAsFailed(transactionId, "Wrong OTP");
+            otpCache.invalidate(transactionId); // Remove from cache
             throw new ValidationException("Transaction has failed. Maximum OTP verification attempts exceeded.");
         }
 
-        if (passwordEncoder.matches(enteredOtp, otp.getOtpCode())) {
-            markOtpAsVerified(transactionId);
-            
-            // Get transaction details to publish OTP verified event
+        if (passwordEncoder.matches(enteredOtp, otpData.getHashedOtpCode())) {
+            otpData.setIsVerified(true);
+            otpCache.put(transactionId, otpData);
+
             Transaction transaction = transactionRepo.findById(transactionId)
                     .orElseThrow(() -> new ResourceNotFoundException("Transaction not found: " + transactionId));
-            
-            // Publish OTP verified event to RabbitMQ
+
             transactionEventPublisher.publishOtpVerified(
                 transactionId,
-                otp.getUserId(),
+                otpData.getUserId(),
                 transaction.getSenderWalletId(),
                 transaction.getReceiverWalletId(),
                 transaction.getAmount(),
-                otp.getTransactionType()
+                otpData.getTransactionType()
             );
             
             return true;
         } else {
-            int newAttemptCount = incrementAttemptCount(transactionId);
+            otpData.setAttemptCount(otpData.getAttemptCount() + 1);
+            otpCache.put(transactionId, otpData);
 
-            if (newAttemptCount >= MAX_ATTEMPTS) {
+            if (otpData.getAttemptCount() >= MAX_ATTEMPTS) {
                 markTransactionAsFailed(transactionId, "Wrong OTP");
+                otpCache.invalidate(transactionId);
                 throw new ValidationException("Transaction has failed. Maximum OTP verification attempts exceeded.");
             }
 
-            int remainingAttempts = MAX_ATTEMPTS - newAttemptCount;
+            int remainingAttempts = MAX_ATTEMPTS - otpData.getAttemptCount();
             throw new ValidationException("Incorrect OTP. Attempts remaining: " + remainingAttempts);
         }
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public int incrementAttemptCount(UUID transactionId) {
-        Otp otp = otpRepo.findByTransactionIdAndIsVerifiedFalse(transactionId)
-                .orElseThrow(() -> new ResourceNotFoundException("OTP not found"));
-        int newCount = otp.getAttemptCount() + 1;
-        otp.setAttemptCount(newCount);
-        otpRepo.saveAndFlush(otp);
-        return newCount;
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void markOtpAsVerified(UUID transactionId) {
-        Otp otp = otpRepo.findByTransactionIdAndIsVerifiedFalse(transactionId)
-                .orElseThrow(() -> new ResourceNotFoundException("OTP not found"));
-        otp.setIsVerified(true);
-        otpRepo.saveAndFlush(otp);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void markOtpAsExpired(UUID transactionId) {
-        Otp otp = otpRepo.findByTransactionId(transactionId)
-                .orElseThrow(() -> new ResourceNotFoundException("OTP not found"));
-        otp.setIsExpired(true);
-        otpRepo.saveAndFlush(otp);
     }
 
     private void markTransactionAsFailed(UUID transactionId, String remark) {
         Transaction transaction = transactionRepo.findById(transactionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Transaction not found: " + transactionId));
 
-        transaction.setStatus("failed");
+        transaction.setStatus("FAILED");
         transaction.setRemarks(remark);
         transactionRepo.save(transaction);
     }

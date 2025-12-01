@@ -46,9 +46,7 @@ public class TransactionEventConsumer {
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Receiver wallet not found: " + receiverWalletId));
 
-            // Process transaction based on type
             if ("CREDIT".equalsIgnoreCase(transactionType)) {
-                // Credit: Add money to wallet
                 senderWallet.setBalance(senderWallet.getBalance() + amount);
                 walletRepo.save(senderWallet);
 
@@ -58,7 +56,6 @@ public class TransactionEventConsumer {
                         "Credit transaction completed successfully");
 
             } else if ("WITHDRAW".equalsIgnoreCase(transactionType)) {
-                // Withdraw: Deduct money from wallet
                 if (senderWallet.getBalance() < amount) {
                     transactionEventPublisher.publishTransactionCompleted(
                             transactionId,
@@ -76,7 +73,6 @@ public class TransactionEventConsumer {
                         "Withdrawal transaction completed successfully");
 
             } else if ("TRANSFER".equalsIgnoreCase(transactionType)) {
-                // Transfer: Deduct from sender, add to receiver
                 if (senderWallet.getBalance() < amount) {
                     transactionEventPublisher.publishTransactionCompleted(
                             transactionId,
@@ -100,7 +96,6 @@ public class TransactionEventConsumer {
 
         } catch (Exception e) {
             logger.error("Error processing OTP verified event: {}", e.getMessage(), e);
-            // Publish failure event
             transactionEventPublisher.publishTransactionCompleted(
                     event.getTransactionId(),
                     "FAILED",
