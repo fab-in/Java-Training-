@@ -10,11 +10,10 @@ import io.jsonwebtoken.security.SignatureException;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.UUID;
 
@@ -27,34 +26,30 @@ public class JwtUtil {
 
     private static final long EXPIRATION_TIME = 30 * 60 * 1000; // 30 minutes
 
+    @Value("${jwt.secret:MySecretKeyForJWTTokenGenerationMustBeAtLeast256BitsLongForHS256Algorithm}")
+    private String secretKeyString;
+
     @PostConstruct
     public void initializeSecretKey() {
         try {
 
-            KeyGenerator keyGenerator = KeyGenerator.getInstance("HmacSHA256");
-
-            keyGenerator.init(256);
-
-            SecretKey generatedKey = keyGenerator.generateKey();
-
-            byte[] keyBytes = generatedKey.getEncoded();
-
+            byte[] keyBytes = secretKeyString.getBytes();
             byte[] finalKeyBytes = new byte[32];
             if (keyBytes.length >= 32) {
                 System.arraycopy(keyBytes, 0, finalKeyBytes, 0, 32);
             } else {
                 System.arraycopy(keyBytes, 0, finalKeyBytes, 0, keyBytes.length);
-                java.security.SecureRandom random = new java.security.SecureRandom();
-                byte[] padding = new byte[32 - keyBytes.length];
-                random.nextBytes(padding);
-                System.arraycopy(padding, 0, finalKeyBytes, keyBytes.length, padding.length);
+                for (int i = keyBytes.length; i < 32; i++) {
+                    finalKeyBytes[i] = keyBytes[i % keyBytes.length];
+                }
             }
 
             this.secretKey = Keys.hmacShaKeyFor(finalKeyBytes);
 
-            logger.info("JWT Secret Key generated successfully using KeyGenerator");
+            logger.info("JWT Secret Key initialized successfully using static key from configuration");
 
-        } catch (NoSuchAlgorithmException e) {
+        } catch (Exception e) {
+            logger.error("Failed to initialize JWT secret key", e);
             throw new RuntimeException("Failed to initialize JWT secret key", e);
         }
     }

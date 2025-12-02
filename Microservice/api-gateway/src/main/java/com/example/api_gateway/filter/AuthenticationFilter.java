@@ -23,14 +23,13 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     @Autowired
     private JwtUtil jwtUtil;
 
-    @Value("${gateway.auth.excluded-paths:/api/auth/register,/api/auth/login,/actuator}")
+    @Value("${gateway.auth.excluded-paths:/api/auth/signup,/api/auth/login,/actuator}")
     private String excludedPathsString;
 
     private List<String> excludedPaths;
 
     @PostConstruct
     public void init() {
-        // Initialize excluded paths from configuration
         excludedPaths = Arrays.asList(excludedPathsString.split(","));
     }
 
@@ -39,33 +38,23 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
 
-        // Check if the path should be excluded from authentication
         if (isExcludedPath(path)) {
             return chain.filter(exchange);
         }
 
-        // Get the Authorization header
         String authHeader = request.getHeaders().getFirst("Authorization");
-
-        // Check if Authorization header is missing
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return onError(exchange, "Missing or invalid Authorization header", HttpStatus.UNAUTHORIZED);
         }
-
-        // Extract the token
         String token = authHeader.substring(7); // Remove "Bearer " prefix
 
-        // Validate the token
         if (!jwtUtil.validateToken(token)) {
             return onError(exchange, "Invalid or expired JWT token", HttpStatus.UNAUTHORIZED);
         }
 
-        // Token is valid, add user info to headers for downstream services
         try {
             String email = jwtUtil.getEmailFromToken(token);
             String userId = jwtUtil.getUserIdFromToken(token);
-
-            // Add user information to request headers for downstream services
             ServerHttpRequest modifiedRequest = request.mutate()
                     .header("X-User-Email", email)
                     .header("X-User-Id", userId)
@@ -96,7 +85,6 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        // Set a high priority to ensure this filter runs early
         return -1;
     }
 }

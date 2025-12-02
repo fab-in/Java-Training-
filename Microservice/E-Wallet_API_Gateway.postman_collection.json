@@ -1,0 +1,680 @@
+{
+	"info": {
+		"_postman_id": "ewallet-api-gateway-001",
+		"name": "E-Wallet API Gateway",
+		"description": "Complete API collection for testing E-Wallet microservices through API Gateway (port 8080). All requests route through Gateway with /api prefix.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "1. Register User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"token\", jsonData.token);",
+									"    pm.environment.set(\"userId\", jsonData.userId);",
+									"    console.log(\"Token saved:\", jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/signup",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"signup"
+							]
+						},
+						"description": "Register a new user. Token is automatically saved to environment variable."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"token\", jsonData.token);",
+									"    pm.environment.set(\"userId\", jsonData.userId);",
+									"    console.log(\"Token saved:\", jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login and get JWT token. Token is automatically saved to environment variable."
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints (no token required)"
+		},
+		{
+			"name": "Wallet Operations",
+			"item": [
+				{
+					"name": "3. Create Wallet",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"My Wallet\",\n  \"passcode\": \"1234\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/wallets",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"wallets"
+							]
+						},
+						"description": "Create a new wallet. Requires authentication token."
+					},
+					"response": []
+				},
+				{
+					"name": "4. Get All Wallets",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/wallets",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"wallets"
+							]
+						},
+						"description": "Get all wallets summary for the authenticated user."
+					},
+					"response": []
+				},
+				{
+					"name": "5. Get Wallets with Balance",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/wallets/with-balance",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"wallets",
+								"with-balance"
+							]
+						},
+						"description": "Get all wallets with full balance details for the authenticated user."
+					},
+					"response": []
+				},
+				{
+					"name": "6. Get Wallet by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/wallets/:walletId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"wallets",
+								":walletId"
+							],
+							"variable": [
+								{
+									"key": "walletId",
+									"value": "your-wallet-id-here"
+								}
+							]
+						},
+						"description": "Get wallet details by ID. Replace :walletId with actual wallet ID."
+					},
+					"response": []
+				},
+				{
+					"name": "7. Update Wallet",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"walletName\": \"My Wallet\",\n  \"userIdentifier\": \"john@example.com\",\n  \"newWalletName\": \"Updated Wallet Name\",\n  \"passcode\": \"5678\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/wallets",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"wallets"
+							]
+						},
+						"description": "Update wallet details. Uses walletName and userIdentifier to find wallet, then updates with new values."
+					},
+					"response": []
+				},
+				{
+					"name": "8. Delete Wallet",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/wallets?walletName=My Wallet&userIdentifier=john@example.com",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"wallets"
+							],
+							"query": [
+								{
+									"key": "walletName",
+									"value": "My Wallet"
+								},
+								{
+									"key": "userIdentifier",
+									"value": "john@example.com"
+								}
+							]
+						},
+						"description": "Delete a wallet by wallet name and user identifier (email or name)."
+					},
+					"response": []
+				},
+				{
+					"name": "9. Credit Wallet",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"walletId\": \"your-wallet-id-here\",\n  \"amount\": 1000.0,\n  \"passcode\": \"1234\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/wallets/credit",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"wallets",
+								"credit"
+							]
+						},
+						"description": "Credit money to wallet. Returns transactionId. OTP will be sent to email. Use verify-otp endpoint to complete transaction."
+					},
+					"response": []
+				},
+				{
+					"name": "10. Withdraw from Wallet",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"walletId\": \"your-wallet-id-here\",\n  \"amount\": 500.0,\n  \"passcode\": \"1234\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/wallets/withdraw",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"wallets",
+								"withdraw"
+							]
+						},
+						"description": "Withdraw money from wallet. Returns transactionId. OTP will be sent to email. Use verify-otp endpoint to complete transaction."
+					},
+					"response": []
+				},
+				{
+					"name": "11. Transfer Between Wallets",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"sourceWalletId\": \"sender-wallet-id\",\n  \"destinationWalletId\": \"receiver-wallet-id\",\n  \"amount\": 200.0,\n  \"passcode\": \"1234\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/wallets/transfer",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"wallets",
+								"transfer"
+							]
+						},
+						"description": "Transfer money between wallets. Returns transactionId. OTP will be sent to email. Use verify-otp endpoint to complete transaction."
+					},
+					"response": []
+				}
+			],
+			"description": "Wallet management and transaction initiation operations (token required)"
+		},
+		{
+			"name": "Transaction Operations",
+			"item": [
+				{
+					"name": "12. Verify OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"transactionId\": \"your-transaction-id\",\n  \"otp\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/transactions/verify-otp",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"transactions",
+								"verify-otp"
+							]
+						},
+						"description": "Verify OTP for a transaction. OTP is sent to user's email after initiating credit/withdraw/transfer. Use transactionId from the response of credit/withdraw/transfer endpoints."
+					},
+					"response": []
+				},
+				{
+					"name": "13. Get Transaction History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/transactions?page=0&size=20&type=all",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"transactions"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Page number (0-indexed)"
+								},
+								{
+									"key": "size",
+									"value": "20",
+									"description": "Items per page"
+								},
+								{
+									"key": "type",
+									"value": "all",
+									"description": "Filter: all, credits, withdrawals, transfers, failed"
+								},
+								{
+									"key": "order",
+									"value": "newest",
+									"description": "Sort order: newest, oldest",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get paginated transaction history for authenticated user. Filter by type: all, credits, withdrawals, transfers, failed. Sort by order: newest (default), oldest."
+					},
+					"response": []
+				},
+				{
+					"name": "14. Get Transaction Statement",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/transactions/statement",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"transactions",
+								"statement"
+							]
+						},
+						"description": "Generate and email transaction statement CSV to user's registered email address."
+					},
+					"response": []
+				}
+			],
+			"description": "Transaction verification and history operations (token required)"
+		},
+		{
+			"name": "User Operations",
+			"item": [
+				{
+					"name": "15. Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users"
+							]
+						},
+						"description": "Get all users. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "16. Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/:userId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								":userId"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "{{userId}}"
+								}
+							]
+						},
+						"description": "Get user details by ID. Uses userId from environment variable (set automatically after login)."
+					},
+					"response": []
+				},
+				{
+					"name": "17. Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Jane Doe\",\n  \"email\": \"jane@example.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users"
+							]
+						},
+						"description": "Create a new user (admin operation). Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "18. Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Name\",\n  \"email\": \"updated@example.com\",\n  \"password\": \"newpassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/users/:userId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								":userId"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "{{userId}}"
+								}
+							]
+						},
+						"description": "Update user details by ID. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "19. Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/:userId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								":userId"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "{{userId}}"
+								}
+							]
+						},
+						"description": "Delete user by ID. Requires authentication."
+					},
+					"response": []
+				}
+			],
+			"description": "User management operations (token required)"
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
