@@ -1,0 +1,10 @@
+CREATE DATABASE IF NOT EXISTS user_db;
+CREATE DATABASE IF NOT EXISTS wallet_db;
+CREATE DATABASE IF NOT EXISTS transactions_db;
+
+GRANT ALL PRIVILEGES ON user_db.* TO 'root'@'%';
+GRANT ALL PRIVILEGES ON wallet_db.* TO 'root'@'%';
+GRANT ALL PRIVILEGES ON transactions_db.* TO 'root'@'%';
+
+FLUSH PRIVILEGES;
+
